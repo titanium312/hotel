@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS", // Puedes cambiarlo a "ESNext" si estás usando módulos ES
+    "outDir": "./dist", // Directorio de salida para los archivos JavaScript compilados
+    "rootDir": "./src", // El directorio de entrada para los archivos TypeScript
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"], // Incluir todos los archivos TS en la carpeta src
+  "exclude": ["node_modules"] // Excluir la carpeta node_modules
+}
+
