@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import { Database } from '../../db/Database'; // Conexión a la base de datos
-import bcrypt from 'bcryptjs';  // Importamos bcrypt para comparar contraseñas
+import bcrypt from 'bcryptjs';
 
 // Iniciar sesión de usuario
 export const iniciarSesion = async (req: Request, res: Response): Promise<Response> => {
-
   const { nombre_usuario, contraseña } = req.body;
 
   try {
@@ -26,22 +25,22 @@ export const iniciarSesion = async (req: Request, res: Response): Promise<Respon
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
-    // 🕒 Actualizar la fecha de sesión a la hora actual
+    // Actualizar la fecha de sesión a la hora actual
     const updateSesionQuery = `
       UPDATE usuarios 
       SET fecha_sesion = CURRENT_TIMESTAMP 
-      WHERE nombre_usuario = ?;
+      WHERE id = ?;
     `;
-    await connection.execute(updateSesionQuery, [nombre_usuario]);
+    await connection.execute(updateSesionQuery, [usuario.id]);
 
-    // 🔍 Consultar el rol del usuario
+    // Consultar el rol del usuario usando su id
     const rolQuery = `
       SELECT r.nombre_rol
       FROM roles r
       JOIN usuario_roles ur ON ur.id_rol = r.id
       WHERE ur.id_usuario = ?;
     `;
-    const [rolRows] = await connection.execute(rolQuery, [nombre_usuario]);
+    const [rolRows] = await connection.execute(rolQuery, [usuario.id]);
 
     if ((rolRows as any[]).length === 0) {
       return res.status(404).json({ message: 'Rol no encontrado para el usuario' });
@@ -49,14 +48,14 @@ export const iniciarSesion = async (req: Request, res: Response): Promise<Respon
 
     const rol = (rolRows as any[])[0].nombre_rol;
 
-    // ✅ Enviar respuesta exitosa
+    // Responder con éxito
     return res.status(200).json({
       message: 'Inicio de sesión exitoso',
       usuario: {
-        id: usuario.id,  // 👈 Agregamos el ID del usuario
+        id: usuario.id,
         nombre_usuario: usuario.nombre_usuario,
         rol: rol,
-        fecha_sesion: new Date().toISOString()
+        fecha_sesion: new Date().toISOString(),
       }
     });
 
