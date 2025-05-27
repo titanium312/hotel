@@ -15,6 +15,8 @@ const validateServiceData = (data: any): string | null => {
   return null;
 };
 
+
+// Controlador para registrar un nuevo servicio
 export const registerService = async (req: Request, res: Response): Promise<void> => {
   const { ID_Servicio, nombre, descripcion, costo, tipo } = req.body;
 
@@ -94,6 +96,152 @@ export const registerService = async (req: Request, res: Response): Promise<void
     }
   }
 };
+
+// Controlador para eliminar un servicio
+export const deleteService = async (req: Request, res: Response): Promise<void> => {
+  const { ID_Servicio } = req.params;
+
+  if (!ID_Servicio) {
+    res.status(400).json({ error: 'El ID del servicio es requerido' });
+    return;
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Verificar si el servicio existe
+    const [service] = await connection.execute<mysql.RowDataPacket[]>(
+      `SELECT ID_Servicio FROM servicio WHERE ID_Servicio = ?`,
+      [ID_Servicio]
+    );
+
+    if (service.length === 0) {
+      res.status(404).json({ error: `El servicio con ID ${ID_Servicio} no existe` });
+      await connection.rollback();
+      connection.release();
+      return;
+    }
+
+    // Eliminar relaciones primero (si aplica)
+    await connection.execute(
+      `DELETE FROM servicio_tipo_relacion WHERE ID_Servicio = ?`,
+      [ID_Servicio]
+    );
+
+    // Eliminar el servicio
+    await connection.execute(
+      `DELETE FROM servicio WHERE ID_Servicio = ?`,
+      [ID_Servicio]
+    );
+
+    await connection.commit();
+    connection.release();
+
+    res.status(200).json({ message: `Servicio con ID ${ID_Servicio} eliminado correctamente` });
+
+  } catch (error: unknown) {
+    if (connection) {
+      await connection.rollback();
+      connection.release();
+    }
+    if (error instanceof Error) {
+      console.error('Error al eliminar el servicio:', error.message);
+      res.status(500).json({ error: 'Error al eliminar el servicio', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Error desconocido' });
+    }
+  }
+};
+
+
+// Controlador para actualizar un servicio
+export const updateService = async (req: Request, res: Response): Promise<void> => {
+  const { ID_Servicio } = req.params;
+  const { nombre, descripcion, costo, tipo } = req.body;
+
+  if (!ID_Servicio || !nombre || !descripcion || !costo || !tipo) {
+    res.status(400).json({ error: 'Faltan datos requeridos (nombre, descripcion, costo, tipo)' });
+    return;
+  }
+
+  if (isNaN(costo) || costo <= 0) {
+    res.status(400).json({ error: 'El costo debe ser un número mayor que 0' });
+    return;
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Verificar si el servicio existe
+    const [service] = await connection.execute<mysql.RowDataPacket[]>(
+      `SELECT ID_Servicio FROM servicio WHERE ID_Servicio = ?`,
+      [ID_Servicio]
+    );
+
+    if (service.length === 0) {
+      res.status(404).json({ error: `El servicio con ID ${ID_Servicio} no existe` });
+      await connection.rollback();
+      connection.release();
+      return;
+    }
+
+    // Verificar si el tipo de servicio existe
+    const [serviceType] = await connection.execute<mysql.RowDataPacket[]>(
+      `SELECT ID_producto_tipo FROM servicio_tipo WHERE ID_producto_tipo = ?`,
+      [tipo]
+    );
+
+    if (serviceType.length === 0) {
+      res.status(400).json({ error: `El tipo de servicio con ID ${tipo} no existe` });
+      await connection.rollback();
+      connection.release();
+      return;
+    }
+
+    // Actualizar datos del servicio
+    await connection.execute(
+      `UPDATE servicio SET Nombre = ?, Descripcion = ?, Precio = ? WHERE ID_Servicio = ?`,
+      [nombre, descripcion, costo, ID_Servicio]
+    );
+
+    // Actualizar relación de tipo
+    await connection.execute(
+      `UPDATE servicio_tipo_relacion SET ID_Servicio_tipo = ? WHERE ID_Servicio = ?`,
+      [tipo, ID_Servicio]
+    );
+
+    await connection.commit();
+    connection.release();
+
+    res.status(200).json({ message: `Servicio con ID ${ID_Servicio} actualizado correctamente` });
+
+  } catch (error: unknown) {
+    if (connection) {
+      await connection.rollback();
+      connection.release();
+    }
+    if (error instanceof Error) {
+      console.error('Error al actualizar el servicio:', error.message);
+      res.status(500).json({ error: 'Error al actualizar el servicio', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Error desconocido' });
+    }
+  }
+};
+
+
+
+
+
+
+
+
+
+
 
 
 /*curl -X POST http://localhost:1234/Hotel/RegistraServicio \

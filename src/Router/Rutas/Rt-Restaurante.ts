@@ -1,7 +1,7 @@
 // ------------------------------ import de SERVICIOS ------------------------------
 
 import { Router } from 'express';
-import { registerService } from '../../controllers/5-Servicios-Productos/Servicios/ServivoResgistra';
+import { registerService,deleteService,updateService } from '../../controllers/5-Servicios-Productos/Servicios/ServivoResgistra';
 import { getServicios } from '../../controllers/5-Servicios-Productos/Servicios/select/Select-Servicios'; 
 import { recibirPedido }  from '../../controllers/5-Servicios-Productos/Servicios/ServiciosInsertar'; 
 import { ServicioListaRecep} from '../../controllers/5-Servicios-Productos/Servicios/ServicioListaRecep'; 
@@ -17,18 +17,25 @@ const routerRt = Router();
 
 // Registrar un nuevo servicio
 routerRt.post('/RegistraServicio', registerService);
+
+// Eliminar un servicio
+routerRt.delete('/EliminarServicio/:ID_Servicio', deleteService);
+
+// Actualizar un servicio
+routerRt.put('/ActualizarServicio/:ID_Servicio', updateService);
+
 // Ruta para obtener servicios con la opción de filtrar por tipo de servicio
 routerRt.get('/ListaServicios', getServicios);
 // Registrar un pedido para un servicio
-
 routerRt.post('/recibir-pedido', recibirPedido);
-
 // Obtener detalles de servicios
 routerRt.get('/servicio/Recepcion-ServiciosList', asyncMiddleware(ServicioListaRecep));
+
 // Cambiar el estado de un servicio
 routerRt.put('/cambiar-estado', asyncMiddleware(actualizarEstadoFactura)); 
 // Cambiar el estado de un servicio
 routerRt.put('/Eliminar-Factura', asyncMiddleware(eliminarFacturaYDetalles));
+// Eliminar un servicio de una factura
 routerRt.put('/Eliminar-Factura-Servicio', asyncMiddleware(eliminarServicioDeFactura));
 // Obtener los tipos de servicios disponibless
 routerRt.get('/servicios/tipo', getServiciosTipo);
