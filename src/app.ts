@@ -1,24 +1,29 @@
 // src/app.ts
+
 import { port } from './db/config';
-import express, { Request, Response, Router } from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import router from './Router/RouterUser';
 import RouterHotel from './Router/RouterHotel';
 
 const app = express();
-app.use(cors()); // Middleware para parsear JSON
-app.use(express.json()); // Middleware para parsear JSON
+app.use(cors());
+app.use(express.json());
 
-
-app.use("/Hotel",RouterHotel);
-app.use("/User",router);
-
+app.use("/Hotel", RouterHotel);
+app.use("/User", router);
 
 app.get('/', (req: Request, res: Response) => {
-  res.send('¡Hola, mundo! Este es el servidor de la aplicación.'+port);
+  res.send('¡Hola, mundo! Este es el servidor de la aplicación.' + port);
 });
 
-// Middleware para manejar errores
+// Función para notificar clientes (debes implementar la lógica real aquí)
+export function notifyClients(message: string) {
+  console.log("Notificando clientes:", message);
+  // Aquí podrías enviar mensajes por websocket o lo que necesites
+}
+
+// Middleware para manejo de errores
 app.use((err: any, req: Request, res: Response, next: any) => {
   if (err.code === 'ECONNREFUSED') {
     res.status(503).json({ message: 'El servidor de la base de datos no está disponible.' });
@@ -27,11 +32,8 @@ app.use((err: any, req: Request, res: Response, next: any) => {
   }
 });
 
-// Iniciar el servidor
 app.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
 });
 
-
-
-// app.ts
+export default app; // Exportar app si la necesitas en otros archivos
