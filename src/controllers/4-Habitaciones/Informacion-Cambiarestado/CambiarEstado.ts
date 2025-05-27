@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import mysql from 'mysql2/promise';
 import { Database } from '../../../db/Database';
-import routerh from '../../../Router/Routerh';
+
 
 const pool = Database.connect();
 

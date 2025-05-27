@@ -31,7 +31,7 @@ export const actualizar = async (req: Request, res: Response): Promise<Response>
     // Verificar si la actualización fue exitosa
     if ((result as any).affectedRows > 0) {
       // Notificar a los clientes conectados
-      notifyClients();  // Llamar a la función que notifica a los clientes
+      notifyClients('Datos actualizados correctamente.');  // Llamar a la función que notifica a los clientes
 
       return res.status(200).json({ message: 'Datos actualizados correctamente.' });
     } else {
