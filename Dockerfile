@@ -1,13 +1,6 @@
-FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+FROM node:18-alpine
 
 WORKDIR /app
-
-COPY .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix .nixpacks/nixpkgs.nix
-
-RUN nix-env -if .nixpacks/nixpkgs.nix && nix-collect-garbage -d
-
-# Asegurar que NODE_ENV es development para instalar devDependencies
-ENV NODE_ENV=development
 
 COPY package*.json ./
 
