@@ -1,3 +1,8 @@
+
+import dotenv from "dotenv";
+
+dotenv.config();
+
 export const port = process.env.port || 1234;
 
 export const dbConfig = {
@@ -8,5 +13,7 @@ export const dbConfig = {
   port: parseInt(process.env.DB_PORT || '3306', 10)
 };
 
+
+console.log("Configuración de la base de datos:", dbConfig);
 
 // config.ts
