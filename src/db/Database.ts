@@ -47,3 +47,5 @@ export class Database {
     }
   }
 }
+
+// Database.ts

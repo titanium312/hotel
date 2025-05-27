@@ -7,3 +7,6 @@ export const dbConfig = {
   database: process.env.DB_NAME || 'hotel',
   port: parseInt(process.env.DB_PORT || '3306', 10)
 };
+
+
+// config.ts
