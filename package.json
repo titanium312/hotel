@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npx ts-node src/app",
-    "build": "npx tsc",
+    "build": "tsc",
     "dev": "ts-node-dev --respawn --transpileOnly src/app.ts"
   },
   "keywords": [],
