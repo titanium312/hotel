@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-export const port = process.env.port || 1234;
+export const port = process.env.PORT || 1234;
 
 export const DB_HOST = process.env.DB_HOST || 'localhost';
 export const DB_USER = process.env.DB_USER || 'root';
