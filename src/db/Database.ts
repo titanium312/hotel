@@ -1,5 +1,4 @@
 import mysql from 'mysql2/promise';
-import { dbConfig } from './config';
 
 export class Database {
   private static pool: mysql.Pool;
@@ -8,14 +7,14 @@ export class Database {
     if (!this.pool) {
       try {
         this.pool = mysql.createPool({
-          host: dbConfig.host,
-          user: dbConfig.user,
-          password: dbConfig.password,
-          database: dbConfig.database,
-          port: dbConfig.port, // ✅ Puerto correctamente agregado
+          host: 'RAILWAY_PRIVATE_DOMAIN', // Sustituir con tu dominio privado
+          user: 'root',
+          password: 'nUYJKjifjMBkHSDVRstsBaHHtvulXXuB',
+          database: 'railway',
+          port: 3306, // Puerto de MySQL
           waitForConnections: true,
           connectionLimit: 10,
-          queueLimit: 0
+          queueLimit: 0,
         });
         console.log('✅ Conexión exitosa a la base de datos');
       } catch (error) {
@@ -47,5 +46,3 @@ export class Database {
     }
   }
 }
-
-// Database.ts
