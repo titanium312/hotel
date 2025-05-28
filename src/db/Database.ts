@@ -7,14 +7,15 @@ export class Database {
     if (!this.pool) {
       try {
         this.pool = mysql.createPool({
-          host: 'RAILWAY_PRIVATE_DOMAIN', // Sustituir con tu dominio privado
-          user: 'root',
-          password: 'nUYJKjifjMBkHSDVRstsBaHHtvulXXuB',
-          database: 'railway',
-          port: 3306, // Puerto de MySQL
+          host: 'shortline.proxy.rlwy.net', // Dominio del servidor
+          user: 'root',                     // Usuario
+          password: 'nUYJKjifjMBkHSDVRstsBaHHtvulXXuB', // Contraseña
+          database: 'railway',              // Base de datos
+          port: 49916,                      // Puerto de conexión
           waitForConnections: true,
           connectionLimit: 10,
           queueLimit: 0,
+          socketPath: undefined,            // No es necesario un socket si estás usando un protocolo TCP
         });
         console.log('✅ Conexión exitosa a la base de datos');
       } catch (error) {
