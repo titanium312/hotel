@@ -77,8 +77,14 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
             Restaurante: rowsRestaurante,
             Bar: rowsBar
         });
-    } catch (error) {
-        console.error('Error al obtener los servicios:', error);
-        return res.status(500).json({ error: 'Hubo un problema al obtener los servicios.' });
-    }
+    } catch (error: any) {
+    console.error('Error al obtener los servicios:', error);
+    return res.status(500).json({
+        error: 'Hubo un problema al obtener los servicios.',
+        message: error.message,
+        sql: error.sql,
+        code: error.code
+    });
+}
+
 };
