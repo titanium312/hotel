@@ -160,3 +160,30 @@ export const eliminarUsuario = async (req: Request, res: Response): Promise<void
     }
   }
 };
+
+
+
+export const obtenerUsuarios = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const connection = await Database.connect();
+
+    const query = `
+      SELECT u.id AS ID, u.nombre_usuario AS Nombre, u.correo_electronico AS Correo, r.nombre_rol AS Rol
+      FROM usuarios u
+      LEFT JOIN usuario_roles ur ON u.id = ur.id_usuario
+      LEFT JOIN roles r ON ur.id_rol = r.id
+      ORDER BY u.id;
+    `;
+
+    const [usuarios] = await connection.execute(query);
+
+    res.status(200).json(usuarios);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: 'Error al obtener usuarios', error: error.message });
+    } else {
+      res.status(500).json({ message: 'Error desconocido al obtener usuarios', error });
+    }
+  }
+};
+

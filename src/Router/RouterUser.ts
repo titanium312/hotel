@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { crearUsuario, editarUsuario, eliminarUsuario, obtenerRoles } from '../controllers/loguin/usuarioController'; 
+import { crearUsuario, editarUsuario, eliminarUsuario, obtenerRoles,obtenerUsuarios } from '../controllers/loguin/usuarioController'; 
 import { getUserRoles } from '../controllers/7-Admi/AdmiUsu'; // Importa correctamente el controlador
 import { iniciarSesion } from '../controllers/loguin/loginController'; 
 
@@ -20,6 +20,11 @@ router.put('/usuarios/:nombre_usuario', Asincronia(editarUsuario));
 
 // Ruta para eliminar un usuario
 router.delete('/usuarios/:nombre_usuario', Asincronia(eliminarUsuario));
+
+
+// optener todos los usuarios
+router.get('/usuarios', Asincronia(obtenerUsuarios));
+
 
 // Ruta para obtener todos los roles
 router.get('/roles', Asincronia(obtenerRoles)); 
