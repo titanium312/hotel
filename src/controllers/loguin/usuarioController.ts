@@ -66,6 +66,7 @@ export const obtenerRoles = async (req: Request, res: Response): Promise<void> =
 
 
 // Editar un usuario
+
 export const editarUsuario = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const { nombre_usuario, nueva_contraseña, id_rol } = req.body;
@@ -84,7 +85,7 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Cambiar nombre si se proporciona
+    // Actualizar nombre_usuario si viene
     if (nombre_usuario) {
       await connection.execute(
         'UPDATE usuarios SET nombre_usuario = ? WHERE id = ?',
@@ -92,7 +93,7 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       );
     }
 
-    // Cambiar contraseña si se proporciona
+    // Actualizar contraseña si viene
     if (nueva_contraseña) {
       const encryptedPassword = await bcrypt.hash(nueva_contraseña, 10);
       await connection.execute(
@@ -101,25 +102,30 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       );
     }
 
-    // Cambiar rol si se proporciona
-    if (id_rol !== undefined && id_rol !== null) {
+    // Actualizar o insertar rol si viene y es un número válido
+    if (id_rol !== undefined && id_rol !== null && !isNaN(Number(id_rol))) {
       const [rolRows] = await connection.execute<mysql.RowDataPacket[]>(
         'SELECT * FROM usuario_roles WHERE id_usuario = ?',
         [id]
       );
 
       if (rolRows.length > 0) {
+        // Ya tiene rol asignado, actualizamos
         await connection.execute(
           'UPDATE usuario_roles SET id_rol = ? WHERE id_usuario = ?',
-          [id_rol, id]
+          [Number(id_rol), id]
         );
       } else {
+        // No tiene rol, insertamos nuevo
         await connection.execute(
           'INSERT INTO usuario_roles (id_usuario, id_rol) VALUES (?, ?)',
-          [id, id_rol]
+          [id, Number(id_rol)]
         );
       }
     }
+
+    // Si usas pools o conexiones manuales, libera la conexión aquí
+    // await connection.release();
 
     res.status(200).json({ message: 'Usuario actualizado exitosamente' });
   } catch (error: unknown) {
