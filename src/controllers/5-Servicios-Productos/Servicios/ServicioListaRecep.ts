@@ -8,7 +8,7 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
     try {
         const connection = await pool.getConnection();
 
-        const queryRestaurante = `
+const queryRestaurante = `
     SELECT
         f.ID_Factura,
         s.Nombre AS Nombre_Servicio,
@@ -27,7 +27,7 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
     JOIN
         servicio s ON sd.ID_Servicio = s.ID_Servicio
     JOIN
-        estado_factura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura  -- <--- Aquí
+        estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura  -- Aquí el nombre correcto
     JOIN
         servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
     JOIN
@@ -37,6 +37,7 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
     WHERE
         st.Descripcion = 'Restaurante';
 `;
+
 
 
         const queryBar = `
