@@ -6,10 +6,8 @@ const pool = Database.connect();
 
 export const ServicioListaRecep = async (req: Request, res: Response): Promise<Response> => {
     try {
-        // Establecer conexión con la base de datos
         const connection = await pool.getConnection();
 
-        // Consulta SQL para obtener la lista de servicios para Restaurante
         const queryRestaurante = `
             SELECT
                 f.ID_Factura,
@@ -33,14 +31,13 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
             JOIN
                 servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
             JOIN
-                Servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
+                servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
             JOIN
                 usuarios u ON f.ID_usuario = u.id
             WHERE
                 st.Descripcion = 'Restaurante';
         `;
 
-        // Consulta SQL para obtener la lista de servicios para Bar
         const queryBar = `
             SELECT
                 f.ID_Factura,
@@ -64,20 +61,18 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
             JOIN
                 servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
             JOIN
-                Servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
+                servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
             JOIN
                 usuarios u ON f.ID_usuario = u.id
             WHERE
                 st.Descripcion = 'Bar';
         `;
 
-        // Ejecutar ambas consultas
         const [rowsRestaurante] = await connection.execute(queryRestaurante);
         const [rowsBar] = await connection.execute(queryBar);
 
-        connection.release();  // Liberar la conexión
+        connection.release();
 
-        // Devolver los resultados de ambas consultas
         return res.status(200).json({
             Restaurante: rowsRestaurante,
             Bar: rowsBar
