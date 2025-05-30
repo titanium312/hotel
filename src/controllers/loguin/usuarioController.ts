@@ -55,18 +55,20 @@ export const obtenerRoles = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+
+
 // Editar un usuario
 export const editarUsuario = async (req: Request, res: Response): Promise<void> => {
-  const { nombre_usuario } = req.params;
-  const { nueva_contraseña, id_rol } = req.body;
+  const { id } = req.params;
+  const { nombre_usuario, nueva_contraseña, id_rol } = req.body;
 
   try {
     const connection = await Database.connect();
 
-    // Primero, obtener el id_usuario correspondiente al nombre_usuario
+    // Verificar que el usuario existe
     const [rows] = await connection.execute<mysql.RowDataPacket[]>(
-      'SELECT id_usuario FROM usuarios WHERE nombre_usuario = ?',
-      [nombre_usuario]
+      'SELECT * FROM usuarios WHERE id = ?',
+      [id]
     );
 
     if (rows.length === 0) {
@@ -74,36 +76,39 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const id_usuario = rows[0].id_usuario;
-
-    // Actualizar contraseña si se proporciona
-    if (nueva_contraseña) {
-      const encryptedPassword = await bcrypt.hash(nueva_contraseña, 10);
+    // Cambiar nombre si se proporciona
+    if (nombre_usuario) {
       await connection.execute(
-        'UPDATE usuarios SET contraseña = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_usuario = ?',
-        [encryptedPassword, id_usuario]
+        'UPDATE usuarios SET nombre_usuario = ? WHERE id = ?',
+        [nombre_usuario, id]
       );
     }
 
-    // Actualizar rol si se proporciona
-    if (id_rol) {
-      // Verificar si ya existe un rol asignado para este usuario
+    // Cambiar contraseña si se proporciona
+    if (nueva_contraseña) {
+      const encryptedPassword = await bcrypt.hash(nueva_contraseña, 10);
+      await connection.execute(
+        'UPDATE usuarios SET contraseña = ? WHERE id = ?',
+        [encryptedPassword, id]
+      );
+    }
+
+    // Cambiar rol si se proporciona
+    if (id_rol !== undefined && id_rol !== null) {
       const [rolRows] = await connection.execute<mysql.RowDataPacket[]>(
         'SELECT * FROM usuario_roles WHERE id_usuario = ?',
-        [id_usuario]
+        [id]
       );
 
       if (rolRows.length > 0) {
-        // Actualizar el rol existente
         await connection.execute(
           'UPDATE usuario_roles SET id_rol = ? WHERE id_usuario = ?',
-          [id_rol, id_usuario]
+          [id_rol, id]
         );
       } else {
-        // Insertar nuevo rol
         await connection.execute(
           'INSERT INTO usuario_roles (id_usuario, id_rol) VALUES (?, ?)',
-          [id_usuario, id_rol]
+          [id, id_rol]
         );
       }
     }
@@ -118,17 +123,23 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+
+
+
+
+
 // Eliminar un usuario
+
 export const eliminarUsuario = async (req: Request, res: Response): Promise<void> => {
-  const { nombre_usuario } = req.params;
+  const { id } = req.params;
 
   try {
     const connection = await Database.connect();
 
-    // Primero, obtener el id_usuario
+    // Verificar existencia
     const [rows] = await connection.execute<mysql.RowDataPacket[]>(
-      'SELECT id_usuario FROM usuarios WHERE nombre_usuario = ?',
-      [nombre_usuario]
+      'SELECT * FROM usuarios WHERE id = ?',
+      [id]
     );
 
     if (rows.length === 0) {
@@ -136,15 +147,11 @@ export const eliminarUsuario = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const id_usuario = rows[0].id_usuario;
-
-    // Eliminar las relaciones de usuario_roles
-    await connection.execute('DELETE FROM usuario_roles WHERE id_usuario = ?', [id_usuario]);
-
-    // Eliminar el usuario
+    // Eliminar relaciones y usuario
+    await connection.execute('DELETE FROM usuario_roles WHERE id_usuario = ?', [id]);
     const [result] = await connection.execute<mysql.ResultSetHeader>(
-      'DELETE FROM usuarios WHERE id_usuario = ?',
-      [id_usuario]
+      'DELETE FROM usuarios WHERE id = ?',
+      [id]
     );
 
     if (result.affectedRows > 0) {

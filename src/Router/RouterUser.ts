@@ -1,6 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
+<<<<<<< HEAD
 import { crearUsuario, editarUsuario, eliminarUsuario, obtenerRoles,obtenerUsuarios } from '../controllers/loguin/usuarioController'; 
 import { getUserRoles } from '../controllers/7-Admi/AdmiUsu'; // Importa correctamente el controlador
+=======
+import { crearUsuario, editarUsuario, eliminarUsuario, obtenerRoles } from '../controllers/loguin/usuarioController'; 
+import { UsuriosLista } from '../controllers/7-Admi/AdmiUsu'; // Importa correctamente el controlador
+>>>>>>> 7e51ce841d7dd9f173679a30eff35ebe7656d27c
 import { iniciarSesion } from '../controllers/loguin/loginController'; 
 
 const router: Router = Router();
@@ -16,10 +21,10 @@ const Asincronia = (fn: Function) => (req: Request, res: Response, next: NextFun
 router.post('/usuarios', Asincronia(crearUsuario));
 
 // Ruta para editar un usuario
-router.put('/usuarios/:nombre_usuario', Asincronia(editarUsuario));
+router.put('/usuarios/Edit/:id', Asincronia(editarUsuario));
 
 // Ruta para eliminar un usuario
-router.delete('/usuarios/:nombre_usuario', Asincronia(eliminarUsuario));
+router.delete('/usuarios/Eliminar/:id', Asincronia(eliminarUsuario));
 
 
 // optener todos los usuarios
@@ -30,7 +35,7 @@ router.get('/usuarios', Asincronia(obtenerUsuarios));
 router.get('/roles', Asincronia(obtenerRoles)); 
 
 // Ruta para obtener usuarios y roles
-router.get('/user-roles', Asincronia(getUserRoles)); // Usa el controlador aquí
+router.get('/UsuariosLista', Asincronia(UsuriosLista)); 
 
 // Ruta para iniciar sesión
 router.post('/login', Asincronia(iniciarSesion)); 

@@ -5,22 +5,25 @@ import { Database } from '../../db/Database';
 const pool = Database.connect();
 
 // Controlador para obtener usuarios, roles y relaciones
-export const getUserRoles = async (req: Request, res: Response): Promise<Response> => {
+export const UsuriosLista = async (req: Request, res: Response): Promise<Response> => {
   try {
-    // 1. Obtener todos los usuarios
-    const [usuarios] = await pool.query('SELECT nombre_usuario, fecha_creacion, fecha_actualizacion FROM usuarios');
-    
-    // 2. Obtener todos los roles
-    const [roles] = await pool.query('SELECT id, nombre_rol, descripcion FROM roles');
-    
-    // 3. Obtener las relaciones entre usuarios y roles
-    const [usuarioRoles] = await pool.query('SELECT ur.id_usuario, ur.id_rol, r.nombre_rol FROM usuario_roles ur JOIN roles r ON ur.id_rol = r.id');
-    
-    // Responder con la información combinada
+    // 1. Obtener todos los usuarios con todos sus campos
+    const [usuarios] = await pool.execute(`
+      SELECT 
+  u.id, 
+  u.nombre_usuario, 
+  u.contraseña, 
+  u.correo_electronico, 
+  u.fecha_creacion, 
+  u.fecha_sesion, 
+  r.nombre_rol AS rol
+FROM usuarios u
+LEFT JOIN Usuario_roles ur ON u.id = ur.id_usuario
+LEFT JOIN roles r ON ur.id_rol = r.id;
+
+    `);
     return res.json({
-      usuarios,
-      roles,
-      usuarioRoles
+      usuarios
     });
   } catch (error) {
     console.error('Error al obtener la información:', error);

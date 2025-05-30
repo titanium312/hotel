@@ -1,26 +1,19 @@
-import dotenv from "dotenv";
-
+import dotenv from 'dotenv';
 dotenv.config();
 
-export const port = process.env.PORT as string | number;
-export const dbConfig = {
-  host: process.env.DB_HOST as string,
-  user: process.env.DB_USER as string,
-  password: process.env.DB_PASSWORD as string,
-  database: process.env.DB_NAME as string,
-  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined,
-};
+export const port = process.env.PORT || 1234;
 
-console.log("Configuración de la base de datos:", dbConfig);
-console.log("Puerto del servidor:", port);
+export const DB_HOST = process.env.DB_HOST || 'localhost';
+export const DB_USER = process.env.DB_USER || 'root';
+export const DB_PASSWORD = process.env.DB_PASSWORD || '123456789';
+export const DB_NAME = process.env.DB_NAME || 'hotel';
+export const DB_PORT = parseInt(process.env.DB_PORT || '3306', 10);
 
-// Opcional: Validar que ninguna variable esté indefinida
-for (const [key, value] of Object.entries(dbConfig)) {
-  if (value === undefined || value === null) {
-    console.warn(`⚠️ La variable de entorno ${key} no está definida`);
-  }
-}
-
-if (!port) {
-  console.warn("⚠️ La variable de entorno PORT no está definida");
-}
+// Mostrar valores actuales
+console.log('🌍 Variables de entorno cargadas:');
+console.log(`DB_HOST: ${DB_HOST}`);
+console.log(`DB_USER: ${DB_USER}`);
+console.log(`DB_PASSWORD: ${DB_PASSWORD}`);
+console.log(`DB_NAME: ${DB_NAME}`);
+console.log(`DB_PORT: ${DB_PORT}`);
+console.log(`APP PORT: ${port}`);
