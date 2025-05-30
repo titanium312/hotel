@@ -5,22 +5,23 @@ import mysql from 'mysql2/promise';
 
 // Crear un nuevo usuario
 export const crearUsuario = async (req: Request, res: Response): Promise<void> => {
-  const { nombre_usuario, contraseña, id_rol } = req.body;
+  const { nombre_usuario, contraseña, correo_electronico, id_rol } = req.body;
 
   try {
-    // Encriptar la contraseña con bcryptjs antes de almacenarla
     const encryptedPassword = await bcrypt.hash(contraseña, 10);
-
     const connection = await Database.connect();
 
-    // Insertar el nuevo usuario en la tabla usuarios
-    const queryUsuario = 'INSERT INTO usuarios (nombre_usuario, contraseña) VALUES (?, ?)';
-    const [result] = await connection.execute<mysql.ResultSetHeader>(queryUsuario, [nombre_usuario, encryptedPassword]);
+    // ✅ Inserta también el correo electrónico
+    const queryUsuario = `
+      INSERT INTO usuarios (nombre_usuario, contraseña, correo_electronico)
+      VALUES (?, ?, ?)`;
+    const [result] = await connection.execute<mysql.ResultSetHeader>(
+      queryUsuario,
+      [nombre_usuario, encryptedPassword, correo_electronico]
+    );
 
-    // Obtener el id_usuario generado por la base de datos
     const insertId = result.insertId;
 
-    // Asignar un rol al nuevo usuario si id_rol está presente
     if (id_rol) {
       const queryRol = 'INSERT INTO usuario_roles (id_usuario, id_rol) VALUES (?, ?)';
       await connection.execute(queryRol, [insertId, id_rol]);
@@ -38,6 +39,13 @@ export const crearUsuario = async (req: Request, res: Response): Promise<void> =
     }
   }
 };
+
+
+
+
+
+
+
 
 // Obtener roles disponibles
 export const obtenerRoles = async (req: Request, res: Response): Promise<void> => {

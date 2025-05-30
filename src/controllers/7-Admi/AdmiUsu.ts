@@ -30,13 +30,14 @@ export const UsuriosLista = async (req: Request, res: Response): Promise<Respons
     // Obtener usuarios (sin roles)
     const [usuarios] = await pool.execute(`
       SELECT 
-        u.id, 
-        u.nombre_usuario, 
-        u.contraseña, 
-        u.correo_electronico, 
-        u.fecha_creacion, 
-        u.fecha_sesion
-      FROM usuarios u
+  u.id AS ID,
+  u.nombre_usuario AS Nombre,
+  u.correo_electronico AS Correo,
+  r.nombre_rol AS Rol
+FROM usuarios u
+LEFT JOIN usuario_roles ur ON u.id = ur.id_usuario
+LEFT JOIN roles r ON ur.id_rol = r.id;
+
     `);
 
     // Agregar roles a cada usuario
