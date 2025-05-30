@@ -1,27 +1,20 @@
 import { Request, Response } from 'express';
 import mysql from 'mysql2/promise';
-import { Database } from '../../../../db/Database';  // Ajusta la ruta si es necesario
+import { Database } from '../../../../db/Database'; // Ajusta la ruta si es necesario
 
 const pool = Database.connect();
 
 export const getServicios = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Obtener el parámetro 'tipo_servicio' de la query
     const { tipo_servicio } = req.query;
-
     let tipoServicioArray: string[] = [];
 
-    // Verificamos si tipo_servicio es un arreglo de strings
     if (Array.isArray(tipo_servicio)) {
-      // Si es un arreglo, nos aseguramos de que cada valor sea una cadena (string)
       tipoServicioArray = tipo_servicio.filter(item => typeof item === 'string').map(item => item.trim());
-    }
-    // Si tipo_servicio es una sola cadena, la convertimos a un arreglo con un solo valor
-    else if (typeof tipo_servicio === 'string') {
+    } else if (typeof tipo_servicio === 'string') {
       tipoServicioArray = [tipo_servicio.trim()];
     }
 
-    // Consulta base sin filtro
     let query = `
       SELECT 
           s.ID_Servicio, 
@@ -39,18 +32,15 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
 
     const queryParams: any[] = [];
 
-    // Si hay tipos de servicio, agregar el filtro con IN
     if (tipoServicioArray.length > 0) {
-      query += ' WHERE st.Descripcion IN (?)';
-      queryParams.push(tipoServicioArray);
+      const placeholders = tipoServicioArray.map(() => '?').join(', ');
+      query += ` WHERE st.Descripcion IN (${placeholders})`;
+      queryParams.push(...tipoServicioArray);
     }
 
-    // Ejecutar la consulta con los parámetros
     const [result] = await pool.query(query, queryParams);
-
     const rows = result as mysql.RowDataPacket[];
 
-    // Si no se encuentran resultados
     if (rows.length === 0) {
       res.status(404).json({ message: 'No se encontraron servicios.' });
     } else {
@@ -58,6 +48,6 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error al obtener los servicios.' });
+    res.status(500).json({ message: 'Error al obtener los servicios.', error });
   }
 };
