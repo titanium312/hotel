@@ -15,20 +15,21 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
       tipoServicioArray = [tipo_servicio.trim()];
     }
 
-    let query = `
-      SELECT 
-          s.ID_Servicio, 
-          s.Nombre, 
-          s.Descripcion, 
-          s.Precio, 
-          st.Descripcion AS Tipo_Servicio
-      FROM 
-          servicio s
-      JOIN 
-          servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
-      JOIN 
-          Servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
-    `;
+   let query = `
+  SELECT 
+      s.ID_Servicio, 
+      s.Nombre, 
+      s.Descripcion, 
+      s.Precio, 
+      st.Descripcion AS Tipo_Servicio
+  FROM 
+      servicio s
+  JOIN 
+      servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
+  JOIN 
+      servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
+`;
+
 
     const queryParams: any[] = [];
 
