@@ -1,11 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
-<<<<<<< HEAD
-import { crearUsuario, editarUsuario, eliminarUsuario, obtenerRoles,obtenerUsuarios } from '../controllers/loguin/usuarioController'; 
-import { getUserRoles } from '../controllers/7-Admi/AdmiUsu'; // Importa correctamente el controlador
-=======
 import { crearUsuario, editarUsuario, eliminarUsuario, obtenerRoles } from '../controllers/loguin/usuarioController'; 
+import { getUserRoles } from '../controllers/7-Admi/AdmiUsu'; // Importa correctamente el controlador
 import { UsuriosLista } from '../controllers/7-Admi/AdmiUsu'; // Importa correctamente el controlador
->>>>>>> 7e51ce841d7dd9f173679a30eff35ebe7656d27c
+
 import { iniciarSesion } from '../controllers/loguin/loginController'; 
 
 const router: Router = Router();
@@ -25,11 +22,6 @@ router.put('/usuarios/Edit/:id', Asincronia(editarUsuario));
 
 // Ruta para eliminar un usuario
 router.delete('/usuarios/Eliminar/:id', Asincronia(eliminarUsuario));
-
-
-// optener todos los usuarios
-router.get('/usuarios', Asincronia(obtenerUsuarios));
-
 
 // Ruta para obtener todos los roles
 router.get('/roles', Asincronia(obtenerRoles)); 
