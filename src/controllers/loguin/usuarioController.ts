@@ -69,7 +69,7 @@ export const obtenerRoles = async (req: Request, res: Response): Promise<void> =
 
 export const editarUsuario = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { nombre_usuario, nueva_contraseña, id_rol } = req.body;
+  const { nombre_usuario, nueva_contraseña, id_rol, correo_electronico } = req.body;
 
   try {
     const connection = await Database.connect();
@@ -83,6 +83,19 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
     if (rows.length === 0) {
       res.status(404).json({ message: 'Usuario no encontrado' });
       return;
+    }
+
+    // Validar que el correo_electronico no esté en uso por otro usuario
+    if (correo_electronico) {
+      const [correoRows] = await connection.execute<mysql.RowDataPacket[]>(
+        'SELECT * FROM usuarios WHERE correo_electronico = ? AND id <> ?',
+        [correo_electronico, id]
+      );
+
+      if (correoRows.length > 0) {
+        res.status(400).json({ message: 'El correo electrónico ya está en uso por otro usuario' });
+        return;
+      }
     }
 
     // Actualizar nombre_usuario si viene
@@ -102,6 +115,14 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       );
     }
 
+    // Actualizar correo_electronico si viene
+    if (correo_electronico) {
+      await connection.execute(
+        'UPDATE usuarios SET correo_electronico = ? WHERE id = ?',
+        [correo_electronico, id]
+      );
+    }
+
     // Actualizar o insertar rol si viene y es un número válido
     if (id_rol !== undefined && id_rol !== null && !isNaN(Number(id_rol))) {
       const [rolRows] = await connection.execute<mysql.RowDataPacket[]>(
@@ -110,13 +131,11 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       );
 
       if (rolRows.length > 0) {
-        // Ya tiene rol asignado, actualizamos
         await connection.execute(
           'UPDATE usuario_roles SET id_rol = ? WHERE id_usuario = ?',
           [Number(id_rol), id]
         );
       } else {
-        // No tiene rol, insertamos nuevo
         await connection.execute(
           'INSERT INTO usuario_roles (id_usuario, id_rol) VALUES (?, ?)',
           [id, Number(id_rol)]
@@ -124,8 +143,7 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       }
     }
 
-    // Si usas pools o conexiones manuales, libera la conexión aquí
-    // await connection.release();
+    // await connection.release(); // Si usas pool, libera conexión aquí
 
     res.status(200).json({ message: 'Usuario actualizado exitosamente' });
   } catch (error: unknown) {
@@ -136,7 +154,6 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
     }
   }
 };
-
 
 
 
