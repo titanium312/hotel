@@ -66,7 +66,6 @@ export const obtenerRoles = async (req: Request, res: Response): Promise<void> =
 
 
 // Editar un usuario
-
 export const editarUsuario = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const { nombre_usuario, nueva_contraseña, id_rol, correo_electronico } = req.body;
@@ -86,7 +85,7 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
     }
 
     // Validar que el correo_electronico no esté en uso por otro usuario
-    if (correo_electronico) {
+    if (correo_electronico !== undefined && correo_electronico !== "") {
       const [correoRows] = await connection.execute<mysql.RowDataPacket[]>(
         'SELECT * FROM usuarios WHERE correo_electronico = ? AND id <> ?',
         [correo_electronico, id]
@@ -96,30 +95,27 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
         res.status(400).json({ message: 'El correo electrónico ya está en uso por otro usuario' });
         return;
       }
+
+      await connection.execute(
+        'UPDATE usuarios SET correo_electronico = ? WHERE id = ?',
+        [correo_electronico, id]
+      );
     }
 
-    // Actualizar nombre_usuario si viene
-    if (nombre_usuario) {
+    // Actualizar nombre_usuario si viene y no es vacío
+    if (nombre_usuario !== undefined && nombre_usuario !== "") {
       await connection.execute(
         'UPDATE usuarios SET nombre_usuario = ? WHERE id = ?',
         [nombre_usuario, id]
       );
     }
 
-    // Actualizar contraseña si viene
-    if (nueva_contraseña) {
+    // Actualizar contraseña si viene y no es vacío
+    if (nueva_contraseña !== undefined && nueva_contraseña !== "") {
       const encryptedPassword = await bcrypt.hash(nueva_contraseña, 10);
       await connection.execute(
         'UPDATE usuarios SET contraseña = ? WHERE id = ?',
         [encryptedPassword, id]
-      );
-    }
-
-    // Actualizar correo_electronico si viene
-    if (correo_electronico) {
-      await connection.execute(
-        'UPDATE usuarios SET correo_electronico = ? WHERE id = ?',
-        [correo_electronico, id]
       );
     }
 
@@ -143,8 +139,6 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       }
     }
 
-    // await connection.release(); // Si usas pool, libera conexión aquí
-
     res.status(200).json({ message: 'Usuario actualizado exitosamente' });
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -154,6 +148,7 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
     }
   }
 };
+
 
 
 
