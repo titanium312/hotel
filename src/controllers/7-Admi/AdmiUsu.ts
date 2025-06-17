@@ -1,14 +1,16 @@
 import { Request, Response } from 'express';
 import { Database } from '../../db/Database'; 
 
-// Crea el pool de conexiones de la base de datos
-const pool = Database.connect();
+// Esperamos la conexión una vez al iniciar el módulo
+const poolPromise = Database.connect();
 
-// Controlador para obtener usuarios, roles y relaciones
 export const UsuriosLista = async (req: Request, res: Response): Promise<Response> => {
   try {
-    // Obtener todos los usuarios con sus datos, incluyendo el rol
-    const [usuarios] = await (await pool).execute(`
+    // Esperamos el pool (si Database.connect es async)
+    const pool = await poolPromise;
+
+    // Ejecutamos la consulta
+    const [usuarios] = await pool.execute(`
       SELECT 
         u.id, 
         u.nombre_usuario, 
