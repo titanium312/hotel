@@ -5,19 +5,16 @@ import mysql from 'mysql2/promise';
 
 // Crear un nuevo usuario
 export const crearUsuario = async (req: Request, res: Response): Promise<void> => {
-  const { nombre_usuario, contraseña, correo_electronico, id_rol } = req.body;
+  const { nombre_usuario, contraseña, id_rol, telefono } = req.body;
 
   try {
     const encryptedPassword = await bcrypt.hash(contraseña, 10);
     const connection = await Database.connect();
 
-    // ✅ Inserta también el correo electrónico
-    const queryUsuario = `
-      INSERT INTO usuarios (nombre_usuario, contraseña, correo_electronico)
-      VALUES (?, ?, ?)`;
+    const queryUsuario = 'INSERT INTO usuarios (nombre_usuario, contraseña, telefono) VALUES (?, ?, ?)';
     const [result] = await connection.execute<mysql.ResultSetHeader>(
       queryUsuario,
-      [nombre_usuario, encryptedPassword, correo_electronico]
+      [nombre_usuario, encryptedPassword, telefono]
     );
 
     const insertId = result.insertId;
@@ -40,13 +37,6 @@ export const crearUsuario = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-
-
-
-
-
-
-
 // Obtener roles disponibles
 export const obtenerRoles = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -63,17 +53,14 @@ export const obtenerRoles = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-
-
 // Editar un usuario
 export const editarUsuario = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { nombre_usuario, nueva_contraseña, id_rol, correo_electronico } = req.body;
+  const { nombre_usuario, nueva_contraseña, id_rol, telefono } = req.body;
 
   try {
     const connection = await Database.connect();
 
-    // Verificar que el usuario existe
     const [rows] = await connection.execute<mysql.RowDataPacket[]>(
       'SELECT * FROM usuarios WHERE id = ?',
       [id]
@@ -84,34 +71,14 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Validar que el correo_electronico no esté en uso por otro usuario
-    if (correo_electronico !== undefined && correo_electronico !== "") {
-      const [correoRows] = await connection.execute<mysql.RowDataPacket[]>(
-        'SELECT * FROM usuarios WHERE correo_electronico = ? AND id <> ?',
-        [correo_electronico, id]
-      );
-
-      if (correoRows.length > 0) {
-        res.status(400).json({ message: 'El correo electrónico ya está en uso por otro usuario' });
-        return;
-      }
-
-      await connection.execute(
-        'UPDATE usuarios SET correo_electronico = ? WHERE id = ?',
-        [correo_electronico, id]
-      );
-    }
-
-    // Actualizar nombre_usuario si viene y no es vacío
-    if (nombre_usuario !== undefined && nombre_usuario !== "") {
+    if (nombre_usuario) {
       await connection.execute(
         'UPDATE usuarios SET nombre_usuario = ? WHERE id = ?',
         [nombre_usuario, id]
       );
     }
 
-    // Actualizar contraseña si viene y no es vacío
-    if (nueva_contraseña !== undefined && nueva_contraseña !== "") {
+    if (nueva_contraseña) {
       const encryptedPassword = await bcrypt.hash(nueva_contraseña, 10);
       await connection.execute(
         'UPDATE usuarios SET contraseña = ? WHERE id = ?',
@@ -119,8 +86,14 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       );
     }
 
-    // Actualizar o insertar rol si viene y es un número válido
-    if (id_rol !== undefined && id_rol !== null && !isNaN(Number(id_rol))) {
+    if (telefono) {
+      await connection.execute(
+        'UPDATE usuarios SET telefono = ? WHERE id = ?',
+        [telefono, id]
+      );
+    }
+
+    if (id_rol !== undefined && id_rol !== null) {
       const [rolRows] = await connection.execute<mysql.RowDataPacket[]>(
         'SELECT * FROM usuario_roles WHERE id_usuario = ?',
         [id]
@@ -129,12 +102,12 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
       if (rolRows.length > 0) {
         await connection.execute(
           'UPDATE usuario_roles SET id_rol = ? WHERE id_usuario = ?',
-          [Number(id_rol), id]
+          [id_rol, id]
         );
       } else {
         await connection.execute(
           'INSERT INTO usuario_roles (id_usuario, id_rol) VALUES (?, ?)',
-          [id, Number(id_rol)]
+          [id, id_rol]
         );
       }
     }
@@ -149,20 +122,13 @@ export const editarUsuario = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-
-
-
-
-
 // Eliminar un usuario
-
 export const eliminarUsuario = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
   try {
     const connection = await Database.connect();
 
-    // Verificar existencia
     const [rows] = await connection.execute<mysql.RowDataPacket[]>(
       'SELECT * FROM usuarios WHERE id = ?',
       [id]
@@ -173,7 +139,6 @@ export const eliminarUsuario = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Eliminar relaciones y usuario
     await connection.execute('DELETE FROM usuario_roles WHERE id_usuario = ?', [id]);
     const [result] = await connection.execute<mysql.ResultSetHeader>(
       'DELETE FROM usuarios WHERE id = ?',
@@ -193,5 +158,3 @@ export const eliminarUsuario = async (req: Request, res: Response): Promise<void
     }
   }
 };
-
-

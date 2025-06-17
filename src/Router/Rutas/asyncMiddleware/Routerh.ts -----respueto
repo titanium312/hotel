@@ -67,7 +67,7 @@ routerh.get('/estadisticas', EstadisticasController.obtenerEstadisticas);
 
 // ------------------------------ Rutas de CLIENTES ------------------------------
 
-routerh.get('/clientes', ClienteController.getClientes);// Obtener todos los clientes
+routerh.get('/clientesT', ClienteController.getClientes);// Obtener todos los clientes
 routerh.get('/clientes/:ID_Cliente', ClienteController.getClienteById);// Obtener un cliente por ID
 routerh.post('/clientes', ClienteController.upsertCliente);// Crear o actualizar un cliente
 routerh.delete('/clientes/:ID_Cliente', ClienteController.deleteCliente);// Eliminar un cliente por ID

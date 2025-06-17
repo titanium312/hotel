@@ -152,8 +152,8 @@ export class RecepcionController {
 C:\Users\pc\Documents\trabajo\hotel\Banken\mi-backend-ts\src>curl -X POST http://localhost:1234/Hotel/habitacion ^
 ¿Más? -F "imagen=@C:\Users\pc\Pictures\c.png" ^
 ¿Más? -F "ID_Habitacion=1" ^
-¿Más? -F "Nombre=Habitación Deluxe" ^
-¿Más? -F "Costo=150" ^
+¿Más? -F "Nombre=Habitación Deluxe" ^s
+¿Más? -F "Costo=150" ^ad
 ¿Más? -F "ID_Estado_Habitacion=1" ^
 ¿Más? -F "ID_Tipo_Habitacion=1" ^
 ¿Más? -F "Descripcion=Habitación amplia con vista al mar." ^

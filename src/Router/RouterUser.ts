@@ -1,8 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { crearUsuario, editarUsuario, eliminarUsuario, obtenerRoles } from '../controllers/loguin/usuarioController'; 
-import { getUserRoles } from '../controllers/7-Admi/AdmiUsu'; // Importa correctamente el controlador
 import { UsuriosLista } from '../controllers/7-Admi/AdmiUsu'; // Importa correctamente el controlador
-
 import { iniciarSesion } from '../controllers/loguin/loginController'; 
 
 const router: Router = Router();
