@@ -7,9 +7,9 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
   try {
     const { tipo_servicio } = req.query;
 
+    // Normalizar tipo_servicio a un array de strings limpio
     let tipoServicioArray: string[] = [];
 
-    // Normalizar tipo_servicio en array de strings sin valores vacíos
     if (Array.isArray(tipo_servicio)) {
       tipoServicioArray = tipo_servicio
         .filter((item): item is string => typeof item === 'string')
@@ -20,16 +20,15 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
       if (trimmed.length > 0) tipoServicioArray = [trimmed];
     }
 
-    // Validar que haya al menos un tipo de servicio
     if (tipoServicioArray.length === 0) {
-      res.status(400).json({ message: 'Debe proporcionar al menos un tipo_servicio válido' });
+      // Si no se envía ningún tipo, devolver error o todos (según tu lógica)
+      res.status(400).json({ error: 'Debe enviar al menos un tipo_servicio válido en query params.' });
       return;
     }
 
-    // Construir placeholders para la consulta SQL, uno por cada tipo de servicio
+    // Crear placeholders para la consulta
     const placeholders = tipoServicioArray.map(() => '?').join(',');
 
-    // Consulta SQL usando IN para filtrar varios tipos de servicio
     const sql = `
       SELECT
           f.ID_Factura,
@@ -66,12 +65,14 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
       ORDER BY f.Fecha_Emision DESC, f.ID_Factura DESC;
     `;
 
-    // Ejecutar consulta con parámetros
     const [rows] = await pool.query(sql, tipoServicioArray);
 
-    res.status(200).json({ servicios: rows });
+    res.json(rows);
   } catch (error) {
-    console.error('Error al obtener servicios:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error en getServicios:', error);
+    res.status(500).json({
+      error: 'Hubo un problema al obtener los servicios.',
+      message: (error as Error).message,
+    });
   }
 };
