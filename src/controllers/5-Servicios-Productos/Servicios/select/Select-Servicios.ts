@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import mysql from 'mysql2/promise';
 import { Database } from '../../../../db/Database';
 
 const pool = Database.connect();
@@ -10,7 +9,7 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
 
     let tipoServicioArray: string[] = [];
 
-    // Validar y normalizar tipo_servicio en array de strings sin valores vacíos
+    // Normalizar tipo_servicio en array de strings sin valores vacíos
     if (Array.isArray(tipo_servicio)) {
       tipoServicioArray = tipo_servicio
         .filter((item): item is string => typeof item === 'string')
@@ -21,61 +20,38 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
       if (trimmed.length > 0) tipoServicioArray = [trimmed];
     }
 
-let query = `
-  SELECT
-      f.ID_Factura,
-      s.Nombre AS Nombre_Servicio,
-      sd.Cantidad,
-      sd.Total / sd.Cantidad AS Precio_Unitario,
-      sd.Total,
-      ef.Descripcion AS Estado_Servicio,
-      f.Fecha_Emision,
-      st.Descripcion AS Tipo_Servicio,
-      sd.mesa,
-      u.nombre_usuario AS Nombre_Usuario_Factura,
-      mp.Descripcion AS Metodo_Pago
-  FROM
-      factura f
-  JOIN
-      servicio_detalle sd ON f.ID_Factura = sd.ID_Factura
-  JOIN
-      servicio s ON sd.ID_Servicio = s.ID_Servicio
-  JOIN
-      estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura
-  JOIN
-      servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
-  JOIN
-      servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
-  JOIN
-      usuarios u ON f.ID_usuario = u.id
-  LEFT JOIN
-      metodopago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
-  WHERE
-      st.Descripcion IN (?, ?) -- o el filtro que uses
-  GROUP BY
-      f.ID_Factura,
-      s.Nombre,
-      sd.Cantidad,
-      sd.Total,
-      ef.Descripcion,
-      f.Fecha_Emision,
-      st.Descripcion,
-      sd.mesa,
-      u.nombre_usuario,
-      mp.Descripcion
-`;
-
-    const queryParams: string[] = [];
-
-    if (tipoServicioArray.length > 0) {
-      const placeholders = tipoServicioArray.map(() => '?').join(', ');
-      query += ` WHERE st.Descripcion IN (${placeholders})`;
-      queryParams.push(...tipoServicioArray);
-    } else {
-      query += ` WHERE st.Descripcion IN ('Restaurante', 'Bar')`; // filtro por defecto
+    // Validar que haya al menos un tipo de servicio
+    if (tipoServicioArray.length === 0) {
+      res.status(400).json({ message: 'Debe proporcionar al menos un tipo_servicio válido' });
+      return;
     }
 
-    query += `
+    // Construir placeholders para la consulta SQL, uno por cada tipo de servicio
+    const placeholders = tipoServicioArray.map(() => '?').join(',');
+
+    // Consulta SQL usando IN para filtrar varios tipos de servicio
+    const sql = `
+      SELECT
+          f.ID_Factura,
+          s.Nombre AS Nombre_Servicio,
+          sd.Cantidad,
+          sd.Total / sd.Cantidad AS Precio_Unitario,
+          sd.Total,
+          ef.Descripcion AS Estado_Servicio,
+          f.Fecha_Emision,
+          st.Descripcion AS Tipo_Servicio,
+          sd.mesa,
+          u.nombre_usuario AS Nombre_Usuario_Factura,
+          mp.Descripcion AS Metodo_Pago
+      FROM factura f
+      JOIN servicio_detalle sd ON f.ID_Factura = sd.ID_Factura
+      JOIN servicio s ON sd.ID_Servicio = s.ID_Servicio
+      JOIN estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura
+      JOIN servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
+      JOIN servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
+      JOIN usuarios u ON f.ID_usuario = u.id
+      LEFT JOIN metodopago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
+      WHERE st.Descripcion IN (${placeholders})
       GROUP BY
           f.ID_Factura,
           s.Nombre,
@@ -87,26 +63,15 @@ let query = `
           sd.mesa,
           u.nombre_usuario,
           mp.Descripcion
+      ORDER BY f.Fecha_Emision DESC, f.ID_Factura DESC;
     `;
 
-    const [rows] = await pool.query<mysql.RowDataPacket[]>(query, queryParams);
+    // Ejecutar consulta con parámetros
+    const [rows] = await pool.query(sql, tipoServicioArray);
 
-    if (rows.length === 0) {
-      res.status(404).json({ message: 'No se encontraron servicios.' });
-      return;
-    }
-
-    // Agrupar resultados por tipo de servicio
-    const serviciosPorTipo: { [key: string]: any[] } = {};
-    rows.forEach(servicio => {
-      const tipo = servicio.Tipo_Servicio;
-      if (!serviciosPorTipo[tipo]) serviciosPorTipo[tipo] = [];
-      serviciosPorTipo[tipo].push(servicio);
-    });
-
-    res.status(200).json(serviciosPorTipo);
+    res.status(200).json({ servicios: rows });
   } catch (error) {
-    console.error('Error en getServicios:', error);
-    res.status(500).json({ message: 'Error al obtener los servicios.', error });
+    console.error('Error al obtener servicios:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
