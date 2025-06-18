@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import mysql from 'mysql2/promise';
 import { Database } from '../../../db/Database';
 
 const pool = Database.connect();
@@ -20,37 +19,18 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
                 st.Descripcion AS Tipo_Servicio,
                 sd.mesa,
                 u.nombre_usuario AS Nombre_Usuario_Factura,
-                GROUP_CONCAT(DISTINCT mp.Descripcion ORDER BY p.Fecha_Pago SEPARATOR ', ') AS Metodos_Pago
+                mp.Descripcion AS Metodo_Pago
             FROM
                 factura f
-            JOIN
-                servicio_detalle sd ON f.ID_Factura = sd.ID_Factura
-            JOIN
-                servicio s ON sd.ID_Servicio = s.ID_Servicio
-            JOIN
-                estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura
-            JOIN
-                servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
-            JOIN
-                servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
-            JOIN
-                usuarios u ON f.ID_usuario = u.id
-            LEFT JOIN
-                pagos p ON f.ID_Factura = p.ID_Factura
-            LEFT JOIN
-                metodopago mp ON p.ID_MetodoPago = mp.ID_MetodoPago
-            WHERE
-                st.Descripcion = 'Restaurante'
-            GROUP BY
-                f.ID_Factura,
-                s.Nombre,
-                sd.Cantidad,
-                sd.Total,
-                ef.Descripcion,
-                f.Fecha_Emision,
-                st.Descripcion,
-                sd.mesa,
-                u.nombre_usuario;
+            JOIN servicio_detalle sd ON f.ID_Factura = sd.ID_Factura
+            JOIN servicio s ON sd.ID_Servicio = s.ID_Servicio
+            JOIN estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura
+            JOIN servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
+            JOIN servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
+            JOIN usuarios u ON f.ID_usuario = u.id
+            LEFT JOIN metodopago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
+            WHERE st.Descripcion = 'Restaurante'
+            LIMIT 100;
         `;
 
         const queryBar = `
@@ -65,37 +45,18 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
                 st.Descripcion AS Tipo_Servicio,
                 sd.mesa,
                 u.nombre_usuario AS Nombre_Usuario_Factura,
-                GROUP_CONCAT(DISTINCT mp.Descripcion ORDER BY p.Fecha_Pago SEPARATOR ', ') AS Metodos_Pago
+                mp.Descripcion AS Metodo_Pago
             FROM
                 factura f
-            JOIN
-                servicio_detalle sd ON f.ID_Factura = sd.ID_Factura
-            JOIN
-                servicio s ON sd.ID_Servicio = s.ID_Servicio
-            JOIN
-                estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura
-            JOIN
-                servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
-            JOIN
-                servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
-            JOIN
-                usuarios u ON f.ID_usuario = u.id
-            LEFT JOIN
-                pagos p ON f.ID_Factura = p.ID_Factura
-            LEFT JOIN
-                metodopago mp ON p.ID_MetodoPago = mp.ID_MetodoPago
-            WHERE
-                st.Descripcion = 'Bar'
-            GROUP BY
-                f.ID_Factura,
-                s.Nombre,
-                sd.Cantidad,
-                sd.Total,
-                ef.Descripcion,
-                f.Fecha_Emision,
-                st.Descripcion,
-                sd.mesa,
-                u.nombre_usuario;
+            JOIN servicio_detalle sd ON f.ID_Factura = sd.ID_Factura
+            JOIN servicio s ON sd.ID_Servicio = s.ID_Servicio
+            JOIN estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura
+            JOIN servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
+            JOIN servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
+            JOIN usuarios u ON f.ID_usuario = u.id
+            LEFT JOIN metodopago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
+            WHERE st.Descripcion = 'Bar'
+            LIMIT 100;
         `;
 
         const [rowsRestaurante] = await connection.execute(queryRestaurante);
