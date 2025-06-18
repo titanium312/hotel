@@ -135,3 +135,47 @@ export const eliminarServicioDeFactura = async (req: Request, res: Response): Pr
     if (connection) connection.release();
   }
 };
+
+
+// Función para actualizar el método de pago de una factura
+export const actualizarMetodoPagoPorFactura = async (req: Request, res: Response): Promise<Response> => {
+  const { idFactura, idMetodoPago } = req.body;
+
+  if (!idFactura || !idMetodoPago) {
+    return res.status(400).json({ error: 'Faltan datos: idFactura y idMetodoPago son requeridos.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Verificar si existen pagos para la factura
+    const [pagos] = await connection.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM Pagos WHERE ID_Factura = ?',
+      [idFactura]
+    );
+
+    if (pagos.length === 0) {
+      await connection.rollback();
+      connection.release();
+      return res.status(404).json({ error: 'No hay pagos registrados para esta factura.' });
+    }
+
+    // Actualizar el método de pago para todos los pagos de esa factura
+    const [result] = await connection.execute<mysql.ResultSetHeader>(
+      'UPDATE Pagos SET ID_MetodoPago = ? WHERE ID_Factura = ?',
+      [idMetodoPago, idFactura]
+    );
+
+    await connection.commit();
+    connection.release();
+
+    return res.status(200).json({ message: `Método de pago actualizado en ${result.affectedRows} pago(s).` });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    if (connection) connection.release();
+    console.error('Error al actualizar método de pago:', error);
+    return res.status(500).json({ error: 'Error al actualizar método de pago.' });
+  }
+};

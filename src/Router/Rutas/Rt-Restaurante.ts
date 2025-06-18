@@ -5,7 +5,7 @@ import { registerService,deleteService,updateService } from '../../controllers/5
 import { getServicios } from '../../controllers/5-Servicios-Productos/Servicios/select/Select-Servicios'; 
 import { recibirPedido }  from '../../controllers/5-Servicios-Productos/Servicios/ServiciosInsertar'; 
 import { ServicioListaRecep} from '../../controllers/5-Servicios-Productos/Servicios/ServicioListaRecep'; 
-import { actualizarEstadoFactura, eliminarFacturaYDetalles,eliminarServicioDeFactura} from '../../controllers/5-Servicios-Productos/Servicios/select/Servicio-Actuliza-Elimina'; 
+import { actualizarEstadoFactura, eliminarFacturaYDetalles,eliminarServicioDeFactura,actualizarMetodoPagoPorFactura} from '../../controllers/5-Servicios-Productos/Servicios/select/Servicio-Actuliza-Elimina'; 
 import { getServiciosTipo } from '../../controllers/5-Servicios-Productos/Servicios/select/Select-tipoServicios';
 
 
@@ -33,6 +33,8 @@ routerRt.get('/servicio/Recepcion-ServiciosList', asyncMiddleware(ServicioListaR
 
 // Cambiar el estado de un servicio
 routerRt.put('/cambiar-estado', asyncMiddleware(actualizarEstadoFactura)); 
+// Cambiar el metodo de pago de un servicio
+routerRt.put('/cambiar-Metodo-pago', asyncMiddleware(actualizarMetodoPagoPorFactura)); 
 // Cambiar el estado de un servicio
 routerRt.put('/Eliminar-Factura', asyncMiddleware(eliminarFacturaYDetalles));
 // Eliminar un servicio de una factura
