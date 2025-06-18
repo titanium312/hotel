@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import mysql from 'mysql2/promise';
-import { Database } from '../../../../db/Database'; // Ajusta la ruta si es necesario
+import { Database } from '../../../../db/Database';
 
 const pool = Database.connect();
 
@@ -50,17 +50,16 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
           usuarios u ON f.ID_usuario = u.id
       LEFT JOIN
           MetodoPago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
-      WHERE
-          st.Descripcion IN ('Restaurante', 'Bar')
     `;
 
     const queryParams: string[] = [];
 
-    // Si el usuario envía filtros tipo_servicio, los aplicamos además
     if (tipoServicioArray.length > 0) {
       const placeholders = tipoServicioArray.map(() => '?').join(', ');
-      query += ` AND st.Descripcion IN (${placeholders})`;
+      query += ` WHERE st.Descripcion IN (${placeholders})`;
       queryParams.push(...tipoServicioArray);
+    } else {
+      query += ` WHERE st.Descripcion IN ('Restaurante', 'Bar')`; // por defecto
     }
 
     query += `
@@ -84,7 +83,18 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    res.status(200).json({ servicios: rows });
+    // Agrupar por tipo de servicio
+    const serviciosPorTipo: { [key: string]: any[] } = {};
+
+    rows.forEach(servicio => {
+      const tipo = servicio.Tipo_Servicio;
+      if (!serviciosPorTipo[tipo]) {
+        serviciosPorTipo[tipo] = [];
+      }
+      serviciosPorTipo[tipo].push(servicio);
+    });
+
+    res.status(200).json(serviciosPorTipo);
   } catch (error) {
     console.error('Error en getServicios:', error);
     res.status(500).json({ message: 'Error al obtener los servicios.', error });
