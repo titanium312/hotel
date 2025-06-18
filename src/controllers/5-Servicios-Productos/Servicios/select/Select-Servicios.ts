@@ -49,7 +49,7 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
       JOIN
           usuarios u ON f.ID_usuario = u.id
       LEFT JOIN
-          MetodoPago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
+          metodopago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
     `;
 
     const queryParams: string[] = [];
@@ -59,7 +59,7 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
       query += ` WHERE st.Descripcion IN (${placeholders})`;
       queryParams.push(...tipoServicioArray);
     } else {
-      query += ` WHERE st.Descripcion IN ('Restaurante', 'Bar')`; // por defecto
+      query += ` WHERE st.Descripcion IN ('Restaurante', 'Bar')`; // filtro por defecto
     }
 
     query += `
@@ -83,14 +83,11 @@ export const getServicios = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Agrupar por tipo de servicio
+    // Agrupar resultados por tipo de servicio
     const serviciosPorTipo: { [key: string]: any[] } = {};
-
     rows.forEach(servicio => {
       const tipo = servicio.Tipo_Servicio;
-      if (!serviciosPorTipo[tipo]) {
-        serviciosPorTipo[tipo] = [];
-      }
+      if (!serviciosPorTipo[tipo]) serviciosPorTipo[tipo] = [];
       serviciosPorTipo[tipo].push(servicio);
     });
 
