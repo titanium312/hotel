@@ -150,28 +150,28 @@ export const actualizarMetodoPagoPorFactura = async (req: Request, res: Response
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    // Verificar si existen pagos para la factura
-    const [pagos] = await connection.execute<mysql.RowDataPacket[]>(
-      'SELECT * FROM Pagos WHERE ID_Factura = ?',
+    // Verificar que la factura existe
+    const [facturas] = await connection.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM factura WHERE ID_Factura = ?',
       [idFactura]
     );
 
-    if (pagos.length === 0) {
+    if (facturas.length === 0) {
       await connection.rollback();
       connection.release();
-      return res.status(404).json({ error: 'No hay pagos registrados para esta factura.' });
+      return res.status(404).json({ error: 'Factura no encontrada.' });
     }
 
-    // Actualizar el método de pago para todos los pagos de esa factura
+    // Actualizar método de pago en factura
     const [result] = await connection.execute<mysql.ResultSetHeader>(
-      'UPDATE Pagos SET ID_MetodoPago = ? WHERE ID_Factura = ?',
+      'UPDATE factura SET ID_MetodoPago = ? WHERE ID_Factura = ?',
       [idMetodoPago, idFactura]
     );
 
     await connection.commit();
     connection.release();
 
-    return res.status(200).json({ message: `Método de pago actualizado en ${result.affectedRows} pago(s).` });
+    return res.status(200).json({ message: `Método de pago actualizado para la factura ${idFactura}.` });
   } catch (error) {
     if (connection) await connection.rollback();
     if (connection) connection.release();

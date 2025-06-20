@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import { registerService,deleteService,updateService } from '../../controllers/5-Servicios-Productos/Servicios/ServivoResgistra';
 import { getServicios } from '../../controllers/5-Servicios-Productos/Servicios/select/Select-Servicios'; 
-import { recibirPedido }  from '../../controllers/5-Servicios-Productos/Servicios/ServiciosInsertar'; 
+import { recibirPedido,insertEstadoCaja,getEstadosCaja}  from '../../controllers/5-Servicios-Productos/Servicios/ServiciosInsertar'; 
 import { ServicioListaRecep} from '../../controllers/5-Servicios-Productos/Servicios/ServicioListaRecep'; 
 import { actualizarEstadoFactura, eliminarFacturaYDetalles,eliminarServicioDeFactura,actualizarMetodoPagoPorFactura} from '../../controllers/5-Servicios-Productos/Servicios/select/Servicio-Actuliza-Elimina'; 
 import { getServiciosTipo } from '../../controllers/5-Servicios-Productos/Servicios/select/Select-tipoServicios';
@@ -30,6 +30,11 @@ routerRt.get('/ListaServicios', getServicios);
 routerRt.post('/recibir-pedido', recibirPedido);
 // Obtener detalles de servicios
 routerRt.get('/servicio/Recepcion-ServiciosList', asyncMiddleware(ServicioListaRecep));
+// caja 
+routerRt.post('/Caja',asyncMiddleware(insertEstadoCaja));
+
+routerRt.post('/CajaEstado',asyncMiddleware(getEstadosCaja));
+
 
 // Cambiar el estado de un servicio
 routerRt.put('/cambiar-estado', asyncMiddleware(actualizarEstadoFactura)); 
