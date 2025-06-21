@@ -123,8 +123,8 @@ export const actualizarMetodoPagoPorFactura = async (req: Request, res: Response
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    // ✅ Arreglado: Tipado explícito del resultado como array de cualquier objeto
-    const [facturas] = await connection.execute(
+    // ✅ Usamos query<T> con tipado explícito para evitar errores
+    const [facturas] = await connection.query<mysql.RowDataPacket[]>(
       'SELECT * FROM factura WHERE ID_Factura = ?',
       [idFactura]
     );
