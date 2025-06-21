@@ -151,7 +151,7 @@ export const actualizarMetodoPagoPorFactura = async (req: Request, res: Response
     await connection.beginTransaction();
 
     // Verificar que la factura existe
-    const [facturas] = await connection.execute<mysql.RowDataPacket[]>(
+    const [facturas] = await connection.execute(
       'SELECT * FROM factura WHERE ID_Factura = ?',
       [idFactura]
     );
@@ -163,7 +163,7 @@ export const actualizarMetodoPagoPorFactura = async (req: Request, res: Response
     }
 
     // Actualizar método de pago en factura
-    const [result] = await connection.execute<mysql.ResultSetHeader>(
+    const [result] = await connection.execute(
       'UPDATE factura SET ID_MetodoPago = ? WHERE ID_Factura = ?',
       [idMetodoPago, idFactura]
     );
