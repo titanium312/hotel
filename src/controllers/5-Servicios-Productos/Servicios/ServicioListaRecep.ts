@@ -10,33 +10,33 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
         const fechaInicio = req.query.fechaInicio as string | undefined;
         const fechaFin = req.query.fechaFin as string | undefined;
 
-        const buildQuery = (tipo: string, withFilter: boolean, withFecha: boolean) => `
-            SELECT
-                f.ID_Factura,
-                s.ID_Servicio,
-                s.Nombre AS Nombre_Servicio,
-                sd.Cantidad,
-                sd.Total / sd.Cantidad AS Precio_Unitario,
-                sd.Total,
-                ef.Descripcion AS Estado_Servicio,
-                f.Fecha_Emision,
-                st.Descripcion AS Tipo_Servicio,
-                sd.mesa,
-                u.nombre_usuario AS Nombre_Usuario_Factura,
-                mp.Descripcion AS Metodo_Pago
-            FROM factura f
-            JOIN servicio_detalle sd ON f.ID_Factura = sd.ID_Factura
-            JOIN servicio s ON sd.ID_Servicio = s.ID_Servicio
-            JOIN estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura
-            JOIN servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
-            JOIN servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
-            JOIN usuarios u ON f.ID_usuario = u.id
-            LEFT JOIN metodopago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
-            WHERE st.Descripcion = ?
-            ${withFilter ? 'AND f.ID_Factura = ?' : ''}
-            ${withFecha ? 'AND f.Fecha_Emision BETWEEN ? AND ?' : ''}
-            LIMIT 100;
-        `;
+const buildQuery = (tipo: string, withFilter: boolean, withFecha: boolean) => `
+    SELECT
+        f.ID_Factura,
+        s.ID_Servicio,
+        s.Nombre AS Nombre_Servicio,
+        sd.Cantidad,
+        sd.Total / sd.Cantidad AS Precio_Unitario,
+        sd.Total,
+        ef.Descripcion AS Estado_Servicio,
+        f.Fecha_Emision,
+        st.Descripcion AS Tipo_Servicio,
+        sd.mesa,
+        u.nombre_usuario AS Nombre_Usuario_Factura,
+        mp.Descripcion AS Metodo_Pago
+    FROM factura f
+    JOIN servicio_detalle sd ON f.ID_Factura = sd.ID_Factura
+    JOIN servicio s ON sd.ID_Servicio = s.ID_Servicio
+    JOIN estadofactura ef ON f.ID_estadoFactura = ef.ID_EstadoFactura
+    JOIN servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
+    JOIN servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
+    JOIN usuarios u ON f.ID_usuario = u.id
+    LEFT JOIN metodoPago mp ON f.ID_MetodoPago = mp.ID_MetodoPago
+    WHERE st.Descripcion = ?
+    ${withFilter ? 'AND f.ID_Factura = ?' : ''}
+    ${withFecha ? 'AND f.Fecha_Emision BETWEEN ? AND ?' : ''}
+    LIMIT 100;
+`;
 
         const paramsRestaurante: any[] = ['Restaurante'];
         if (idFactura) paramsRestaurante.push(idFactura);
