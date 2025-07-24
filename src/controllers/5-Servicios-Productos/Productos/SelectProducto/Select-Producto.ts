@@ -3,30 +3,28 @@ import { Database } from '../../../../db/Database';
 
 const pool = Database.connect();
 
-// Controlador para obtener todos los productos con su categoría y precios
 const obtenerProductos = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Realizamos el JOIN con la tabla producto_tipo para obtener la categoría
         const [rows] = await pool.query(`
-            SELECT 
-                p.ID_Producto,
+            SELECT
+                p.ID_Producto AS ID,
                 p.Nombre,
                 p.Descripcion,
+                p.Precio_Unitario,
                 p.Stock,
-                pt.Descripcion AS Categoria,
-                e.Precio_Compra,
-                p.Precio_Unitario AS Precio_Venta
-            FROM 
-                producto p
-            JOIN 
-                producto_tipo pt ON p.ID_producto_tipo = pt.ID_producto_tipo
-            LEFT JOIN 
-                Entrada e ON p.ID_Producto = e.ID_Producto
-            ORDER BY 
-                p.ID_Producto;
+                pr.Nombre AS Proveedor,
+                pt.Descripcion AS Tipo,
+                u.Descripcion AS Unidad,
+                GROUP_CONCAT(s.Nombre SEPARATOR ', ') AS Servicios_Consumidores
+            FROM producto p
+            LEFT JOIN provedor pr ON p.ID_Provedor = pr.ID_Provedor
+            LEFT JOIN producto_tipo pt ON p.ID_producto_tipo = pt.ID_producto_tipo
+            LEFT JOIN unidad u ON p.ID_Unidad = u.ID_Unidad
+            LEFT JOIN servicio_producto sp ON p.ID_Producto = sp.ID_Producto
+            LEFT JOIN servicio s ON sp.ID_Servicio = s.ID_Servicio
+            GROUP BY p.ID_Producto
         `);
 
-        // Enviamos la respuesta con los productos, sus categorías y precios
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener los productos:', error);
@@ -34,5 +32,5 @@ const obtenerProductos = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
-// Exportación por defecto
 export default obtenerProductos;
+

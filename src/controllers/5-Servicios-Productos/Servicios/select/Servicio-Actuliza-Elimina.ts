@@ -44,43 +44,86 @@ export const actualizarEstadoFactura = async (req: Request, res: Response): Prom
 };
 
 // ✅ Función para eliminar factura y sus detalles
-export const eliminarFacturaYDetalles = async (req: Request, res: Response): Promise<Response> => {
-  const { idFactura } = req.body;
 
-  let connection: PoolConnection | undefined;
+
+export const eliminarFacturaYDetalles = async (req: Request, res: Response): Promise<void> => {
+  const connection = await pool.getConnection();
+
   try {
-    connection = await pool.getConnection();
-    await connection.beginTransaction();
+    const { ID_Factura } = req.params;  // <-- aquí
 
-    await connection.execute(
-      'DELETE FROM servicio_detalle WHERE ID_Factura = ?',
-      [idFactura]
-    );
-
-    const [result] = await connection.execute(
-      'DELETE FROM factura WHERE ID_Factura = ?',
-      [idFactura]
-    );
-
-    const affectedRows = (result as OkPacket).affectedRows;
-
-    if (affectedRows === 0) {
-      await connection.rollback();
-      connection.release();
-      return res.status(404).json({ error: 'Factura no encontrada.' });
+    if (!ID_Factura) {
+      res.status(400).json({ message: 'ID_Factura es requerido' });
+      return;
     }
 
-    await connection.commit();
-    connection.release();
+    // Verificar si la factura existe
+    const [facturas] = await connection.query<RowDataPacket[]>(
+      `SELECT ID_Factura FROM factura WHERE ID_Factura = ?`,
+      [ID_Factura]
+    );
 
-    return res.status(200).json({ message: 'Factura y detalles eliminados con éxito.' });
-  } catch (error) {
-    if (connection) await connection.rollback();
-    if (connection) connection.release();
-    console.error('Error al eliminar factura:', error);
-    return res.status(500).json({ error: 'Hubo un error al eliminar la factura y sus detalles.' });
+    if (facturas.length === 0) {
+      res.status(404).json({ message: `Factura con ID ${ID_Factura} no encontrada` });
+      return;
+    }
+
+    await connection.beginTransaction();
+
+    // Obtener los servicios y cantidades de la factura
+    const [detalles] = await connection.query<RowDataPacket[]>(
+      `SELECT ID_Servicio, Cantidad FROM servicio_detalle WHERE ID_Factura = ?`,
+      [ID_Factura]
+    );
+
+    // Reponer stock de productos usados en cada servicio
+    for (const detalle of detalles) {
+      const { ID_Servicio, Cantidad: cantidadServicio } = detalle;
+
+      // Obtener productos del servicio
+      const [productos] = await connection.query<RowDataPacket[]>(
+        `SELECT ID_Producto, Cantidad FROM servicio_producto WHERE ID_Servicio = ?`,
+        [ID_Servicio]
+      );
+
+      for (const producto of productos) {
+        const cantidadReponer = cantidadServicio * producto.Cantidad;
+
+        await connection.query(
+          `UPDATE producto SET Stock = Stock + ? WHERE ID_Producto = ?`,
+          [cantidadReponer, producto.ID_Producto]
+        );
+      }
+    }
+
+    // Eliminar los detalles de servicio
+    await connection.query(
+      `DELETE FROM servicio_detalle WHERE ID_Factura = ?`,
+      [ID_Factura]
+    );
+
+    // Eliminar la factura
+    await connection.query(
+      `DELETE FROM factura WHERE ID_Factura = ?`,
+      [ID_Factura]
+    );
+
+    await connection.commit();
+    res.status(200).json({ message: 'Factura eliminada correctamente y stock restaurado' });
+
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Error al eliminar la factura:', error);
+    res.status(500).json({
+      message: 'Error al eliminar la factura',
+      error: { message: error.message || 'Error desconocido' }
+    });
+  } finally {
+    connection.release();
   }
 };
+
+
 
 // ✅ Función para eliminar un servicio de una factura
 export const eliminarServicioDeFactura = async (req: Request, res: Response): Promise<Response> => {

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mostrar Usuarios</title>
+</head>
+<body>
+  <h1>Lista de Usuarios</h1>
+  <table id="usuariosTable" border="1">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre de Usuario</th>
+        <th>Correo Electrónico</th>
+        <th>Teléfono</th>
+        <th>Rol</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Aquí se llenarán los usuarios -->
+    </tbody>
+  </table>
+
+  <script>
+    // Función para obtener y mostrar los usuarios
+    async function cargarUsuarios() {
+      try {
+        const response = await fetch('http://localhost:1234/user/usuarioslista');
+        const data = await response.json();
+        const tableBody = document.querySelector('#usuariosTable tbody');
+        
+        data.usuarios.forEach(usuario => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${usuario.id}</td>
+            <td>${usuario.nombre_usuario}</td>
+            <td>${usuario.correo_electronico}</td>
+            <td>${usuario.telefono}</td>
+            <td>${usuario.rol}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      } catch (error) {
+        console.error("Error al cargar los usuarios:", error);
+      }
+    }
+
+    // Cargar los usuarios cuando la página se cargue
+    cargarUsuarios();
+  </script>
+</body>
+</html>

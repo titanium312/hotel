@@ -1,54 +1,79 @@
 import { Request, Response } from 'express';
-import mysql from 'mysql2/promise';
-import { Database } from '../../../../db/Database'; // Ajusta la ruta si es necesario
+import { Database } from '../../../../db/Database';
 
 const pool = Database.connect();
 
+interface Producto {
+  ID_Producto: number;
+  Nombre_Producto: string;
+  Cantidad: number | string;
+  Precio_Unitario: number | string;
+  Stock: number | string;
+  Unidad_Producto: string;  // Campo adicional para la unidad de medida
+}
+
 export const getServicios = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { tipo_servicio } = req.query;
-    let tipoServicioArray: string[] = [];
+    // Actualización de la consulta SQL para incluir la unidad de cada producto
+    const [servicios] = await pool.query(`
+      SELECT s.ID_Servicio, s.Nombre, s.Descripcion, s.Precio,
+             sp.ID_Producto, sp.Cantidad, 
+             p.Nombre AS Nombre_Producto, p.Precio_Unitario, p.Stock, u.Descripcion AS Unidad_Producto
+      FROM servicio s
+      LEFT JOIN servicio_producto sp ON s.ID_Servicio = sp.ID_Servicio
+      LEFT JOIN producto p ON sp.ID_Producto = p.ID_Producto
+      LEFT JOIN unidad u ON p.ID_Unidad = u.ID_Unidad
+    `);
 
-    if (Array.isArray(tipo_servicio)) {
-      tipoServicioArray = tipo_servicio.filter(item => typeof item === 'string').map(item => item.trim());
-    } else if (typeof tipo_servicio === 'string') {
-      tipoServicioArray = [tipo_servicio.trim()];
-    }
+    // Organizar los servicios con sus productos
+    const serviciosConProductos = (servicios as any[]).reduce((acc: any[], s: any) => {
+      let servicio = acc.find(item => item.ID_Servicio === s.ID_Servicio);
 
-   let query = `
-  SELECT 
-      s.ID_Servicio, 
-      s.Nombre, 
-      s.Descripcion, 
-      s.Precio, 
-      st.Descripcion AS Tipo_Servicio
-  FROM 
-      servicio s
-  JOIN 
-      servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
-  JOIN 
-      servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
-`;
+      if (!servicio) {
+        servicio = {
+          ID_Servicio: s.ID_Servicio,
+          Nombre: s.Nombre,
+          Descripcion: s.Descripcion,
+          Costo: s.Precio,
+          Productos: [] as Producto[],
+          MaxUnidades: 0
+        };
+        acc.push(servicio);
+      }
 
+      if (s.ID_Producto) {
+        servicio.Productos.push({
+          ID_Producto: s.ID_Producto,
+          Nombre_Producto: s.Nombre_Producto,
+          Cantidad: s.Cantidad,
+          Precio_Unitario: s.Precio_Unitario,
+          Stock: s.Stock,
+          Unidad_Producto: s.Unidad_Producto  // Agregar la unidad de medida
+        });
+      }
 
-    const queryParams: any[] = [];
+      return acc;
+    }, []);
 
-    if (tipoServicioArray.length > 0) {
-      const placeholders = tipoServicioArray.map(() => '?').join(', ');
-      query += ` WHERE st.Descripcion IN (${placeholders})`;
-      queryParams.push(...tipoServicioArray);
-    }
+    // Calcular las unidades máximas por servicio
+    serviciosConProductos.forEach(servicio => {
+      if (servicio.Productos.length === 0) {
+        servicio.MaxUnidades = Infinity;
+      } else {
+        const cantidadesPosibles = servicio.Productos.map((p: Producto) => {
+          const cantidadNecesaria = parseFloat(p.Cantidad.toString());
+          const disponible = parseFloat(p.Stock.toString());
+          return Math.floor(disponible / cantidadNecesaria);
+        });
 
-    const [result] = await pool.query(query, queryParams);
-    const rows = result as mysql.RowDataPacket[];
+        servicio.MaxUnidades = Math.min(...cantidadesPosibles);
+      }
+    });
 
-    if (rows.length === 0) {
-      res.status(404).json({ message: 'No se encontraron servicios.' });
-    } else {
-      res.status(200).json({ servicios: rows });
-    }
+    // Enviar la respuesta con los servicios y sus productos
+    res.status(200).json(serviciosConProductos);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error al obtener los servicios.', error });
+    console.error('Error al obtener los servicios:', error);
+    res.status(500).json({ error: 'Error al obtener los servicios.' });
   }
 };
