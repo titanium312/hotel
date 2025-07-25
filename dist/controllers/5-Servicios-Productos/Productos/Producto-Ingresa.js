@@ -43,7 +43,7 @@ const agregarFactura = async (req, res) => {
                 await connection.query(`UPDATE producto SET Stock = Stock - ? WHERE ID_Producto = ?`, [cantidad, idProducto]);
             }
             // Registrar detalles de factura (común para entrada y salida)
-            await connection.query(`INSERT INTO detallesProducto (ID_Factura, ID_Producto, Cantidad, Fecha_emicion)
+            await connection.query(`INSERT INTO detallesproducto (ID_Factura, ID_Producto, Cantidad, Fecha_emicion)
          VALUES (?, ?, ?, CURRENT_DATE)`, [facturaId, idProducto, cantidad]);
         }
         await connection.commit();
