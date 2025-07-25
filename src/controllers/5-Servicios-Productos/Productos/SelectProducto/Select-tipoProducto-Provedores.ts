@@ -12,7 +12,7 @@ export class ProductoController {
 
     try {
       // Realizamos la consulta SELECT para obtener los tipos de productos
-      const [tiposProductos] = await connection.query('SELECT * FROM PRODUCTO_TIPO');
+      const [tiposProductos] = await connection.query('SELECT * FROM producto_tipo');
 
       // Enviar la respuesta con los tipos de productos
       res.status(200).json({
@@ -42,7 +42,7 @@ export class ProductoController {
 
     try {
       // Realizamos la consulta SELECT para obtener los proveedores
-      const [proveedores] = await connection.query('SELECT * FROM Provedor');
+      const [proveedores] = await connection.query('SELECT * FROM provedores');
 
       // Enviar la respuesta con los proveedores
       res.status(200).json({
