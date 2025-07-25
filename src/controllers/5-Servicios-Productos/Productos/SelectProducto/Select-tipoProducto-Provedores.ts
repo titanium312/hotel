@@ -42,7 +42,7 @@ export class ProductoController {
 
     try {
       // Realizamos la consulta SELECT para obtener los proveedores
-      const [proveedores] = await connection.query('SELECT * FROM provedores');
+      const [proveedores] = await connection.query('SELECT * FROM provedor');
 
       // Enviar la respuesta con los proveedores
       res.status(200).json({
