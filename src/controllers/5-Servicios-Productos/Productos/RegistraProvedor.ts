@@ -26,14 +26,14 @@ export const createProvedor = async (req: Request, res: Response): Promise<Respo
 
     // Verificar si el proveedor ya existe por ID_Provedor
     const [existingProvider] = await connection.execute<mysql.RowDataPacket[]>(
-      'SELECT * FROM Provedor WHERE ID_Provedor = ?',
+      'SELECT * FROM provedor WHERE ID_Provedor = ?',
       [ID_Provedor]
     );
 
     if (existingProvider.length > 0) {
       // Si el proveedor existe, actualizamos sus datos
       await connection.execute(
-        'UPDATE Provedor SET Nombre = ?, Telefono = ?, Correo = ?, Direccion = ? WHERE ID_Provedor = ?',
+        'UPDATE provedor SET Nombre = ?, Telefono = ?, Correo = ?, Direccion = ? WHERE ID_Provedor = ?',
         [Nombre, Telefono, Correo, Direccion, ID_Provedor]
       );
       connection.release();
@@ -41,7 +41,7 @@ export const createProvedor = async (req: Request, res: Response): Promise<Respo
     } else {
       // Si no existe, creamos un nuevo proveedor
       await connection.execute(
-        'INSERT INTO Provedor (ID_Provedor, Nombre, Telefono, Correo, Direccion) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO provedor (ID_Provedor, Nombre, Telefono, Correo, Direccion) VALUES (?, ?, ?, ?, ?)',
         [ID_Provedor, Nombre, Telefono, Correo, Direccion]
       );
       connection.release();
