@@ -9,7 +9,7 @@ class ProductoController {
         const connection = await pool.getConnection();
         try {
             // Realizamos la consulta SELECT para obtener los tipos de productos
-            const [tiposProductos] = await connection.query('SELECT * FROM PRODUCTO_TIPO');
+            const [tiposProductos] = await connection.query('SELECT * FROM producto_tipo');
             // Enviar la respuesta con los tipos de productos
             res.status(200).json({
                 message: 'Tipos de productos obtenidos correctamente',
