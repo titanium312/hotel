@@ -146,5 +146,5 @@ export const ServicioListaRecep = async (req: Request, res: Response): Promise<R
       sql: error.sql,
       code: error.code,
     });
-  }
+    }
 };
