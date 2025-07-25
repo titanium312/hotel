@@ -73,7 +73,7 @@ export const agregarFactura = async (req: Request, res: Response): Promise<void>
 
       // Registrar detalles de factura (común para entrada y salida)
       await connection.query(
-        `INSERT INTO detallesProducto (ID_Factura, ID_Producto, Cantidad, Fecha_emicion)
+        `INSERT INTO detallesproducto (ID_Factura, ID_Producto, Cantidad, Fecha_emicion)
          VALUES (?, ?, ?, CURRENT_DATE)`,
         [facturaId, idProducto, cantidad]
       );
