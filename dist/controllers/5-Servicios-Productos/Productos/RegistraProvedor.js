@@ -20,16 +20,16 @@ const createProvedor = async (req, res) => {
     try {
         const connection = await pool.getConnection();
         // Verificar si el proveedor ya existe por ID_Provedor
-        const [existingProvider] = await connection.execute('SELECT * FROM Provedor WHERE ID_Provedor = ?', [ID_Provedor]);
+        const [existingProvider] = await connection.execute('SELECT * FROM provedor WHERE ID_Provedor = ?', [ID_Provedor]);
         if (existingProvider.length > 0) {
             // Si el proveedor existe, actualizamos sus datos
-            await connection.execute('UPDATE Provedor SET Nombre = ?, Telefono = ?, Correo = ?, Direccion = ? WHERE ID_Provedor = ?', [Nombre, Telefono, Correo, Direccion, ID_Provedor]);
+            await connection.execute('UPDATE provedor SET Nombre = ?, Telefono = ?, Correo = ?, Direccion = ? WHERE ID_Provedor = ?', [Nombre, Telefono, Correo, Direccion, ID_Provedor]);
             connection.release();
             return res.status(200).json({ message: 'Proveedor actualizado exitosamente' });
         }
         else {
             // Si no existe, creamos un nuevo proveedor
-            await connection.execute('INSERT INTO Provedor (ID_Provedor, Nombre, Telefono, Correo, Direccion) VALUES (?, ?, ?, ?, ?)', [ID_Provedor, Nombre, Telefono, Correo, Direccion]);
+            await connection.execute('INSERT INTO provedor (ID_Provedor, Nombre, Telefono, Correo, Direccion) VALUES (?, ?, ?, ?, ?)', [ID_Provedor, Nombre, Telefono, Correo, Direccion]);
             connection.release();
             return res.status(201).json({ message: 'Proveedor creado exitosamente' });
         }
@@ -50,14 +50,14 @@ const eliminarProvedor = async (req, res) => {
     try {
         const connection = await pool.getConnection();
         // Verificamos si el proveedor existe antes de eliminarlo
-        const [existingProviderResult] = await connection.execute('SELECT * FROM Provedor WHERE ID_Provedor = ?', [ID_Provedor]);
+        const [existingProviderResult] = await connection.execute('SELECT * FROM provedor WHERE ID_Provedor = ?', [ID_Provedor]);
         if (existingProviderResult.length === 0) {
             // Si no se encuentra el proveedor, devolvemos un error
             connection.release();
             return res.status(404).json({ error: 'Proveedor no encontrado' });
         }
         // Si el proveedor existe, lo eliminamos de la base de datos
-        await connection.execute('DELETE FROM Provedor WHERE ID_Provedor = ?', [ID_Provedor]);
+        await connection.execute('DELETE FROM provedor WHERE ID_Provedor = ?', [ID_Provedor]);
         connection.release();
         return res.status(200).json({ message: 'Proveedor eliminado exitosamente' });
     }
