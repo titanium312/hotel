@@ -37,7 +37,7 @@ class ProductoController {
         const connection = await pool.getConnection();
         try {
             // Realizamos la consulta SELECT para obtener los proveedores
-            const [proveedores] = await connection.query('SELECT * FROM Provedor');
+            const [proveedores] = await connection.query('select * from provedor');
             // Enviar la respuesta con los proveedores
             res.status(200).json({
                 message: 'Proveedores obtenidos correctamente',
