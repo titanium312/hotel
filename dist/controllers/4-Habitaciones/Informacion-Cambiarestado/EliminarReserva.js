@@ -20,7 +20,7 @@ const actualizar = async (req, res) => {
         // Verificar si la actualización fue exitosa
         if (result.affectedRows > 0) {
             // Notificar a los clientes conectados
-            (0, app_1.notifyClients)(); // Llamar a la función que notifica a los clientes
+            (0, app_1.notifyClients)('Datos actualizados correctamente.'); // Llamar a la función que notifica a los clientes
             return res.status(200).json({ message: 'Datos actualizados correctamente.' });
         }
         else {

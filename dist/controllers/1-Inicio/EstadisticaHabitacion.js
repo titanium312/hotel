@@ -8,33 +8,34 @@ class EstadisticasController {
     static async obtenerEstadisticas(req, res) {
         try {
             const query = `
-        SELECT
-          (SELECT COUNT(*) FROM habitacion) AS 'Total de Habitaciones',
-          (SELECT COUNT(*)
-           FROM habitacion h
-           JOIN estado_habitacion eh ON h.ID_Estado_Habitacion = eh.ID_Estado_Habitacion
-           WHERE eh.Descripcion = 'Disponible') AS 'Habitaciones Libres',
-          (SELECT COUNT(*)
-           FROM habitacion h
-           JOIN estado_habitacion eh ON h.ID_Estado_Habitacion = eh.ID_Estado_Habitacion
-           WHERE eh.Descripcion = 'Ocupada') AS 'Habitaciones Ocupadas',
-          (SELECT COUNT(*)
-           FROM reserva r
-           JOIN reservahabitacion rh ON r.ID_Reserva = rh.ID_Reserva
-           WHERE r.Fecha_Ingreso = CURRENT_DATE) AS 'Habitaciones Reservadas Hoy';
-      `;
-            // Ejecutamos la consulta
+      SELECT
+        COUNT(*) AS 'Total de Habitaciones',
+        SUM(CASE WHEN eh.Descripcion = 'Disponible' THEN 1 ELSE 0 END) AS 'Habitaciones Libres',
+        SUM(CASE WHEN eh.Descripcion = 'Ocupada' THEN 1 ELSE 0 END) AS 'Habitaciones Ocupadas',
+        (
+          SELECT COUNT(*)
+          FROM reserva r
+          JOIN reservahabitacion rh ON r.ID_Reserva = rh.ID_Reserva
+          WHERE r.Fecha_Ingreso = CURRENT_DATE
+        ) AS 'Habitaciones Reservadas Hoy'
+      FROM habitacion h
+      JOIN estado_habitacion eh ON h.ID_Estado_Habitacion = eh.ID_Estado_Habitacion
+    `;
             const [result] = await pool.query(query);
-            const estadisticas = result;
-            if (estadisticas.length > 0) {
-                res.json(estadisticas[0]); // Devolvemos los resultados de la primera fila
-            }
-            else {
-                res.status(404).json({ message: 'No se encontraron estadísticas' });
-            }
+            const estadisticas = result[0];
+            // Siempre habrá resultados (al menos ceros)
+            res.json({
+                success: true,
+                data: estadisticas
+            });
         }
         catch (err) {
-            res.status(500).json({ message: 'Error al obtener las estadísticas', error: err });
+            console.error('Error en obtenerEstadisticas:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno al obtener las estadísticas',
+                error: process.env.NODE_ENV === 'development' && err instanceof Error ? err.message : undefined
+            });
         }
     }
     // Función para obtener las reservas activas
@@ -68,12 +69,7 @@ class EstadisticasController {
             // Ejecutamos la consulta
             const [result] = await pool.query(query);
             const reservas = result;
-            if (reservas.length === 0) {
-                res.status(404).json({ message: 'No se encontraron reservas activas' });
-            }
-            else {
-                res.status(200).json(reservas); // Devolvemos las reservas activas
-            }
+            res.status(200).json(reservas); // Siempre devolvemos la lista, vacía o no
         }
         catch (err) {
             res.status(500).json({ message: 'Error al obtener las reservas activas', error: err });

@@ -11,13 +11,13 @@ const Asincronia = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next
 // curl -X POST http://localhost:1234/User/usuarios -H "Content-Type: application/json" -d "{\"nombre_usuario\":\"user\",\"contraseña\":\"user\",\"correo_electronico\":\"user@example.com\",\"id_rol\":2}"
 router.post('/usuarios', Asincronia(usuarioController_1.crearUsuario));
 // Ruta para editar un usuario
-router.put('/usuarios/:nombre_usuario', Asincronia(usuarioController_1.editarUsuario));
+router.put('/usuarios/Edit/:id', Asincronia(usuarioController_1.editarUsuario));
 // Ruta para eliminar un usuario
-router.delete('/usuarios/:nombre_usuario', Asincronia(usuarioController_1.eliminarUsuario));
+router.delete('/usuarios/Eliminar/:id', Asincronia(usuarioController_1.eliminarUsuario));
 // Ruta para obtener todos los roles
 router.get('/roles', Asincronia(usuarioController_1.obtenerRoles));
 // Ruta para obtener usuarios y roles
-router.get('/user-roles', Asincronia(AdmiUsu_1.getUserRoles)); // Usa el controlador aquí
+router.get('/UsuariosLista', Asincronia(AdmiUsu_1.UsuriosLista));
 // Ruta para iniciar sesión
 router.post('/login', Asincronia(loginController_1.iniciarSesion));
 router.get("/", (rep, res) => {

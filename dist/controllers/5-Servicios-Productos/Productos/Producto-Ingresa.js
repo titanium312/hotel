@@ -1,62 +1,71 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.agregarEntrada = void 0;
+exports.agregarFactura = void 0;
 const Database_1 = require("../../../db/Database");
 // Conexión a la base de datos
 const pool = Database_1.Database.connect();
-// Función para registrar la entrada de productos y transacciones de la factura
-const agregarEntrada = async (req, res) => {
+const agregarFactura = async (req, res) => {
     const connection = await pool.getConnection();
-    const { productos, proveedorId, tipoFactura, metodoPago, descuento, adelanto } = req.body;
+    const { productos, proveedorId, tipoFactura, metodoPago, descuento = 0, adelanto = 0 } = req.body;
     try {
         await connection.beginTransaction();
-        // Paso 1: Registrar la factura de compra
-        const [resultFactura] = await connection.query(`INSERT INTO factura (Fecha_Emision, Total, ID_estadoFactura, TipoFactura, Descuento, Adelanto)
-       VALUES (CURRENT_DATE, ?, 1, ?, ?, ?)`, [calcularTotal(productos), tipoFactura, descuento, adelanto]);
-        const facturaId = resultFactura.insertId; // Acceder al insertId
-        // Paso 2: Registrar los detalles de los productos en la factura
+        if (!Array.isArray(productos) || productos.length === 0) {
+            throw new Error('La lista de productos no puede estar vacía.');
+        }
+        if (![1, 2].includes(tipoFactura)) {
+            throw new Error('Tipo de factura inválido. Debe ser 1 (entrada) o 2 (venta).');
+        }
+        const totalFactura = calcularTotal(productos);
+        // Insertar factura
+        const [facturaResult] = await connection.query(`INSERT INTO factura (Fecha_Emision, Total, ID_estadoFactura, TipoFactura, Descuento, Adelanto, ID_MetodoPago)
+       VALUES (CURRENT_DATE, ?, 1, ?, ?, ?, ?)`, [totalFactura, tipoFactura, descuento, adelanto, metodoPago]);
+        const facturaId = facturaResult.insertId;
         for (const producto of productos) {
             const { idProducto, cantidad, precioCompra } = producto;
-            // 2.1 Registrar la entrada de productos (inventario)
-            await connection.query(`INSERT INTO entrada (ID_Producto, Cantidad, Precio_Compra)
-         VALUES (?, ?, ?)`, [idProducto, cantidad, precioCompra]);
-            // 2.2 Insertar detalles de productos en la factura
-            await connection.query(`INSERT INTO detallesproducto (ID_Factura, ID_Producto, Cantidad, Fecha_emicion)
+            if (!idProducto || cantidad <= 0 || precioCompra < 0) {
+                throw new Error('Datos inválidos para producto en la factura.');
+            }
+            if (tipoFactura === 1) {
+                // Entrada (compra): aumentar stock y registrar entrada
+                await connection.query(`INSERT INTO entrada (ID_Producto, Cantidad, Precio_Compra)
+           VALUES (?, ?, ?)`, [idProducto, cantidad, precioCompra]);
+                await connection.query(`UPDATE producto SET Stock = Stock + ? WHERE ID_Producto = ?`, [cantidad, idProducto]);
+            }
+            else if (tipoFactura === 2) {
+                // Salida (venta): validar stock, disminuir stock y registrar salida
+                const [rows] = await connection.query(`SELECT Stock FROM producto WHERE ID_Producto = ?`, [idProducto]);
+                const stockActual = (rows[0]?.Stock ?? 0);
+                if (stockActual < cantidad) {
+                    throw new Error(`Stock insuficiente para producto ID ${idProducto}. Disponible: ${stockActual}, solicitado: ${cantidad}`);
+                }
+                // Aquí puedes crear tabla `salida` o registrar en otra tabla similar si la tienes
+                // Por ahora solo actualizamos stock y registramos detalles
+                await connection.query(`UPDATE producto SET Stock = Stock - ? WHERE ID_Producto = ?`, [cantidad, idProducto]);
+            }
+            // Registrar detalles de factura (común para entrada y salida)
+            await connection.query(`INSERT INTO detallesProducto (ID_Factura, ID_Producto, Cantidad, Fecha_emicion)
          VALUES (?, ?, ?, CURRENT_DATE)`, [facturaId, idProducto, cantidad]);
-            // 2.3 Actualizar el stock de los productos
-            await connection.query(`UPDATE producto SET Stock = Stock + ? WHERE ID_Producto = ?`, [cantidad, idProducto]);
         }
-        // Paso 3: Registrar el pago
-        await connection.query(`INSERT INTO pagos (ID_Factura, Monto, Fecha_Pago, ID_MetodoPago)
-       VALUES (?, ?, CURRENT_TIMESTAMP, ?)`, [facturaId, adelanto, metodoPago]);
-        // Confirmar la transacción
         await connection.commit();
         res.status(200).json({ message: 'Factura registrada exitosamente', facturaId });
     }
     catch (error) {
-        // Verificación de tipo de error
+        await connection.rollback();
         if (error instanceof Error) {
-            // Si el error es una instancia de Error, accedemos a las propiedades como message y stack
-            console.error(error.message);
+            console.error('Error al registrar la factura:', error.message);
             res.status(500).json({ message: 'Error al registrar la factura', error: error.message });
         }
         else {
-            // En caso de que el error no sea un objeto tipo Error, enviamos un mensaje genérico
-            console.error('Error desconocido');
-            res.status(500).json({ message: 'Error desconocido' });
+            console.error('Error desconocido al registrar la factura');
+            res.status(500).json({ message: 'Error desconocido al registrar la factura' });
         }
-        // Revertir la transacción si hubo un error
-        await connection.rollback();
     }
     finally {
-        // Liberar la conexión
         connection.release();
     }
 };
-exports.agregarEntrada = agregarEntrada;
-// Función para calcular el total de la factura basado en los productos
+exports.agregarFactura = agregarFactura;
+// Función para calcular el total de la factura
 const calcularTotal = (productos) => {
-    return productos.reduce((total, producto) => {
-        return total + (producto.cantidad * producto.precioCompra);
-    }, 0);
+    return productos.reduce((total, { cantidad, precioCompra }) => total + cantidad * precioCompra, 0);
 };

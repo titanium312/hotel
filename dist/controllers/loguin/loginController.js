@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.iniciarSesion = void 0;
 const Database_1 = require("../../db/Database"); // Conexión a la base de datos
-const bcryptjs_1 = __importDefault(require("bcryptjs")); // Importamos bcrypt para comparar contraseñas
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 // Iniciar sesión de usuario
 const iniciarSesion = async (req, res) => {
     const { nombre_usuario, contraseña } = req.body;
@@ -23,33 +23,33 @@ const iniciarSesion = async (req, res) => {
         if (!contrasenaValida) {
             return res.status(401).json({ message: 'Contraseña incorrecta' });
         }
-        // 🕒 Actualizar la fecha de sesión a la hora actual
+        // Actualizar la fecha de sesión a la hora actual
         const updateSesionQuery = `
       UPDATE usuarios 
       SET fecha_sesion = CURRENT_TIMESTAMP 
-      WHERE nombre_usuario = ?;
+      WHERE id = ?;
     `;
-        await connection.execute(updateSesionQuery, [nombre_usuario]);
-        // 🔍 Consultar el rol del usuario
+        await connection.execute(updateSesionQuery, [usuario.id]);
+        // Consultar el rol del usuario usando su id
         const rolQuery = `
       SELECT r.nombre_rol
       FROM roles r
       JOIN usuario_roles ur ON ur.id_rol = r.id
       WHERE ur.id_usuario = ?;
     `;
-        const [rolRows] = await connection.execute(rolQuery, [nombre_usuario]);
+        const [rolRows] = await connection.execute(rolQuery, [usuario.id]);
         if (rolRows.length === 0) {
             return res.status(404).json({ message: 'Rol no encontrado para el usuario' });
         }
         const rol = rolRows[0].nombre_rol;
-        // ✅ Enviar respuesta exitosa
+        // Responder con éxito
         return res.status(200).json({
             message: 'Inicio de sesión exitoso',
             usuario: {
-                id: usuario.id, // 👈 Agregamos el ID del usuario
+                id: usuario.id,
                 nombre_usuario: usuario.nombre_usuario,
                 rol: rol,
-                fecha_sesion: new Date().toISOString()
+                fecha_sesion: new Date().toISOString(),
             }
         });
     }

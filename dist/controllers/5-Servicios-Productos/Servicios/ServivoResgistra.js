@@ -1,89 +1,94 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerService = void 0;
+exports.EliminarServicio = exports.RegistraServicio = void 0;
 const Database_1 = require("../../../db/Database");
 const pool = Database_1.Database.connect();
-// Función para validar los datos del servicio
-const validateServiceData = (data) => {
-    if (!data.ID_Servicio || !data.nombre || !data.descripcion || !data.costo || !data.tipo) {
-        return 'Faltan datos requeridos (ID_Servicio, nombre, descripcion, costo, tipo)';
-    }
-    if (isNaN(data.costo) || data.costo <= 0) {
-        return 'El costo debe ser un número mayor que 0';
-    }
-    return null;
-};
-const registerService = async (req, res) => {
-    const { ID_Servicio, nombre, descripcion, costo, tipo } = req.body;
-    // Validar los datos del servicio
-    const validationError = validateServiceData(req.body);
-    if (validationError) {
-        res.status(400).json({ error: validationError });
-        return;
-    }
-    let connection;
+const RegistraServicio = async (req, res) => {
+    const { ID_Servicio, Nombre, Descripcion, Precio, productos, } = req.body;
+    const connection = await pool.getConnection();
     try {
-        // Iniciar conexión a la base de datos
-        connection = await pool.getConnection();
-        await connection.beginTransaction(); // Iniciar transacción
-        // Verificar si el tipo de servicio existe (usamos 'ID_producto_tipo' en lugar de 'ID_Servicio_Tipo')
-        const [serviceType] = await connection.execute(`
-      SELECT ID_producto_tipo FROM servicio_tipo WHERE ID_producto_tipo = ?`, [tipo] // 'tipo' es el ID del tipo de servicio que pasas en el body
-        );
-        if (serviceType.length === 0) {
-            res.status(400).json({ error: `El tipo de servicio con ID ${tipo} no existe` });
-            await connection.rollback();
-            connection.release();
-            return;
-        }
-        // Verificar si ya existe un servicio con el mismo ID_Servicio
-        const [existingService] = await connection.execute(`
-      SELECT ID_Servicio FROM servicio WHERE ID_Servicio = ?`, [ID_Servicio]);
+        // Inicia la transacción
+        await connection.beginTransaction();
+        // Verifica si el servicio existe
+        const [existingService] = await connection.query('SELECT * FROM servicio WHERE ID_Servicio = ?', [ID_Servicio]);
         if (existingService.length > 0) {
-            res.status(400).json({ error: `El servicio con ID_Servicio ${ID_Servicio} ya existe` });
-            await connection.rollback();
-            connection.release();
-            return;
-        }
-        // Insertar el nuevo servicio en la tabla 'servicio'
-        await connection.execute(`
-      INSERT INTO servicio (ID_Servicio, Nombre, Descripcion, Precio) 
-      VALUES (?, ?, ?, ?)`, [ID_Servicio, nombre, descripcion, costo]);
-        // Relacionar el servicio con el tipo de servicio en la tabla 'servicio_tipo_relacion'
-        await connection.execute(`
-      INSERT INTO servicio_tipo_relacion (ID_Servicio, ID_Servicio_tipo) 
-      VALUES (?, ?)`, [ID_Servicio, tipo] // Usamos 'ID_Servicio_tipo' en lugar de 'ID_producto_tipo'
-        );
-        // Confirmar la transacción
-        await connection.commit();
-        connection.release();
-        // Enviar respuesta positiva
-        res.status(201).json({ message: 'Servicio registrado correctamente', ID_Servicio });
-    }
-    catch (error) {
-        if (connection) {
-            await connection.rollback(); // Revertir en caso de error
-            connection.release();
-        }
-        // Manejo de errores
-        if (error instanceof Error) {
-            console.error('Error al registrar el servicio:', error.message);
-            res.status(500).json({ error: 'Error al registrar el servicio', details: error.message });
+            // Actualiza el servicio existente
+            const [updateResult] = await connection.query('UPDATE servicio SET Nombre = ?, Descripcion = ?, Precio = ? WHERE ID_Servicio = ?', [Nombre, Descripcion, Precio, ID_Servicio]);
+            if (updateResult.affectedRows === 0) {
+                throw new Error('Error updating the service');
+            }
         }
         else {
-            console.error('Error desconocido:', error);
-            res.status(500).json({ error: 'Error desconocido' });
+            // Inserta un nuevo servicio con ID_Servicio incluido
+            const [insertResult] = await connection.query('INSERT INTO servicio (ID_Servicio, Nombre, Descripcion, Precio) VALUES (?, ?, ?, ?)', [ID_Servicio, Nombre, Descripcion, Precio]);
+            if (insertResult.affectedRows === 0) {
+                throw new Error('Error inserting the service');
+            }
+        }
+        // Elimina productos antiguos asociados
+        await connection.query('DELETE FROM servicio_producto WHERE ID_Servicio = ?', [ID_Servicio]);
+        // Inserta o actualiza productos nuevos
+        for (const producto of productos) {
+            await connection.query('INSERT INTO servicio_producto (ID_Servicio, ID_Producto, Cantidad) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE Cantidad = ?', [ID_Servicio, producto.ID_Producto, producto.Cantidad, producto.Cantidad]);
+        }
+        // Confirma la transacción
+        await connection.commit();
+        res.status(200).json({ message: 'Service registered or updated successfully' });
+    }
+    catch (error) {
+        // Reversa la transacción en caso de error
+        await connection.rollback();
+        if (error instanceof Error) {
+            res.status(500).json({ error: error.message });
+        }
+        else {
+            res.status(500).json({ error: 'An unknown error occurred' });
         }
     }
+    finally {
+        // Libera la conexión
+        connection.release();
+    }
 };
-exports.registerService = registerService;
-/*curl -X POST http://localhost:1234/Hotel/RegistraServicio \
--H "Content-Type: application/json" \
--d '{
-  "ID_Servicio": 1,
-  "nombre": "Servicio de Lavandería",
-  "descripcion": "Servicio de lavandería para ropa de cama",
-  "costo": 20.50,
-  "tipo": 2
-}'
-*/ 
+exports.RegistraServicio = RegistraServicio;
+// Controller to delete a service
+const EliminarServicio = async (req, res) => {
+    const { ID_Servicio } = req.params;
+    const connection = await pool.getConnection();
+    try {
+        // Start a transaction
+        await connection.beginTransaction();
+        // Check if the service exists
+        const [existingService] = await connection.query('SELECT * FROM servicio WHERE ID_Servicio = ?', [ID_Servicio]);
+        if (existingService.length === 0) {
+            res.status(404).json({ error: 'Service not found' });
+            return;
+        }
+        // Delete associated products first
+        await connection.query('DELETE FROM servicio_producto WHERE ID_Servicio = ?', [ID_Servicio]);
+        // Delete the service
+        const [deleteResult] = await connection.query('DELETE FROM servicio WHERE ID_Servicio = ?', [ID_Servicio]);
+        if (deleteResult.affectedRows === 0) {
+            throw new Error('Error deleting the service');
+        }
+        // Commit transaction
+        await connection.commit();
+        res.status(200).json({ message: 'Service deleted successfully' });
+    }
+    catch (error) {
+        // Handle the error properly with a type guard or cast
+        if (error instanceof Error) {
+            res.status(500).json({ error: error.message });
+        }
+        else {
+            res.status(500).json({ error: 'An unknown error occurred' });
+        }
+        // Rollback transaction on error
+        await connection.rollback();
+    }
+    finally {
+        // Release connection back to pool
+        connection.release();
+    }
+};
+exports.EliminarServicio = EliminarServicio;

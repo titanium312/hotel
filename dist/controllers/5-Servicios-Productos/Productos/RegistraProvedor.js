@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createProvedor = void 0;
+exports.obtenerProveedoresConProductos = exports.eliminarProvedor = exports.createProvedor = void 0;
 const Database_1 = require("../../../db/Database");
 const pool = Database_1.Database.connect();
 // Función para validar los datos del proveedor
@@ -10,39 +10,127 @@ const validateProviderData = (data) => {
     }
     return null;
 };
+// Lógica para crear o actualizar un proveedor
 const createProvedor = async (req, res) => {
-    console.log('Cuerpo de la solicitud:', req.body);
     const { ID_Provedor, Nombre, Telefono, Correo, Direccion } = req.body;
-    // Validar los datos del proveedor
-    const validationError = validateProviderData(req.body);
-    if (validationError) {
-        res.status(400).json({ error: validationError });
-        return;
+    // Validación de datos
+    if (!ID_Provedor || !Nombre || !Telefono || !Correo || !Direccion) {
+        return res.status(400).json({ error: 'Faltan datos requeridos' });
     }
     try {
         const connection = await pool.getConnection();
-        // Verificar si el proveedor ya existe (por correo)
-        const [existingProvider] = await connection.execute('SELECT ID_Provedor FROM Provedor WHERE Correo = ?', [Correo]);
+        // Verificar si el proveedor ya existe por ID_Provedor
+        const [existingProvider] = await connection.execute('SELECT * FROM Provedor WHERE ID_Provedor = ?', [ID_Provedor]);
         if (existingProvider.length > 0) {
-            res.status(400).json({ error: `El proveedor con correo ${Correo} ya existe` });
+            // Si el proveedor existe, actualizamos sus datos
+            await connection.execute('UPDATE Provedor SET Nombre = ?, Telefono = ?, Correo = ?, Direccion = ? WHERE ID_Provedor = ?', [Nombre, Telefono, Correo, Direccion, ID_Provedor]);
             connection.release();
-            return;
-        }
-        // Insertar el nuevo proveedor
-        await connection.execute('INSERT INTO Provedor (ID_Provedor, Nombre, Telefono, Correo, Direccion) VALUES (?, ?, ?, ?, ?)', [ID_Provedor, Nombre, Telefono, Correo, Direccion]);
-        connection.release();
-        res.status(201).json({ message: 'Proveedor creado exitosamente' });
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            console.error('Error al crear el proveedor:', error.message);
-            res.status(500).json({ error: 'Error al crear el proveedor', details: error.message });
+            return res.status(200).json({ message: 'Proveedor actualizado exitosamente' });
         }
         else {
-            console.error('Error desconocido:', error);
-            res.status(500).json({ error: 'Error desconocido' });
+            // Si no existe, creamos un nuevo proveedor
+            await connection.execute('INSERT INTO Provedor (ID_Provedor, Nombre, Telefono, Correo, Direccion) VALUES (?, ?, ?, ?, ?)', [ID_Provedor, Nombre, Telefono, Correo, Direccion]);
+            connection.release();
+            return res.status(201).json({ message: 'Proveedor creado exitosamente' });
+        }
+    }
+    catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+        if (error instanceof Error) {
+            return res.status(500).json({ error: 'Error al procesar la solicitud', details: error.message });
+        }
+        else {
+            return res.status(500).json({ error: 'Error al procesar la solicitud', details: String(error) });
         }
     }
 };
 exports.createProvedor = createProvedor;
-//curl -X POST http://localhost:1234/Hotel/provedores -H "Content-Type: application/json" -d "{\"ID_Provedor\": 123, \"Nombre\": \"Proveedor Test\", \"Telefono\": \"123456789\", \"Correo\": \"proveedor@correo.com\", \"Direccion\": \"Calle Falsa 123\"}"
+const eliminarProvedor = async (req, res) => {
+    const { ID_Provedor } = req.params; // Obtenemos el ID del proveedor desde los parámetros de la URL
+    try {
+        const connection = await pool.getConnection();
+        // Verificamos si el proveedor existe antes de eliminarlo
+        const [existingProviderResult] = await connection.execute('SELECT * FROM Provedor WHERE ID_Provedor = ?', [ID_Provedor]);
+        if (existingProviderResult.length === 0) {
+            // Si no se encuentra el proveedor, devolvemos un error
+            connection.release();
+            return res.status(404).json({ error: 'Proveedor no encontrado' });
+        }
+        // Si el proveedor existe, lo eliminamos de la base de datos
+        await connection.execute('DELETE FROM Provedor WHERE ID_Provedor = ?', [ID_Provedor]);
+        connection.release();
+        return res.status(200).json({ message: 'Proveedor eliminado exitosamente' });
+    }
+    catch (error) {
+        console.error('Error al eliminar el proveedor:', error);
+        if (error instanceof Error) {
+            return res.status(500).json({ error: 'Error al procesar la solicitud', details: error.message });
+        }
+        else {
+            return res.status(500).json({ error: 'Error al procesar la solicitud', details: String(error) });
+        }
+    }
+};
+exports.eliminarProvedor = eliminarProvedor;
+const obtenerProveedoresConProductos = async (req, res) => {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const query = `
+      SELECT 
+        p.ID_Provedor, p.Nombre AS NombreProvedor, p.Telefono, p.Correo, p.Direccion,
+        pr.ID_Producto, pr.Nombre AS NombreProducto, pr.Descripcion, pr.Precio_Unitario, pr.Stock, pr.ID_producto_tipo, pr.ID_Unidad
+      FROM provedor p
+      LEFT JOIN producto pr ON p.ID_Provedor = pr.ID_Provedor
+      ORDER BY p.ID_Provedor, pr.ID_Producto;
+    `;
+        const [rows] = await connection.query(query);
+        // Agrupar productos por proveedor
+        const proveedoresMap = {};
+        rows.forEach(row => {
+            if (!proveedoresMap[row.ID_Provedor]) {
+                proveedoresMap[row.ID_Provedor] = {
+                    ID_Provedor: row.ID_Provedor,
+                    Nombre: row.NombreProvedor,
+                    Telefono: row.Telefono,
+                    Correo: row.Correo,
+                    Direccion: row.Direccion,
+                    Productos: []
+                };
+            }
+            // Si el proveedor tiene productos, agregarlos
+            if (row.ID_Producto) {
+                proveedoresMap[row.ID_Provedor].Productos.push({
+                    ID_Producto: row.ID_Producto,
+                    Nombre: row.NombreProducto,
+                    Descripcion: row.Descripcion,
+                    Precio_Unitario: row.Precio_Unitario,
+                    Stock: row.Stock,
+                    ID_producto_tipo: row.ID_producto_tipo,
+                    ID_Unidad: row.ID_Unidad
+                });
+            }
+        });
+        // Convertimos el mapa a un array
+        const proveedoresConProductos = Object.values(proveedoresMap);
+        res.status(200).json({
+            message: 'Proveedores con sus productos obtenidos correctamente',
+            data: proveedoresConProductos
+        });
+    }
+    catch (error) {
+        console.error('Error al obtener proveedores con productos:', error);
+        if (error instanceof Error) {
+            res.status(500).json({ message: 'Error al obtener proveedores con productos', error: error.message });
+        }
+        else {
+            res.status(500).json({ message: 'Error desconocido al obtener proveedores con productos' });
+        }
+    }
+    finally {
+        if (connection)
+            connection.release();
+    }
+};
+exports.obtenerProveedoresConProductos = obtenerProveedoresConProductos;
+//curl -X POST  http://localhost:1234/Hotel/Productos/Crearprovedores -H "Content-Type: application/json" -d "{\"ID_Provedor\": 434, \"Nombre\": \"Proveedor Test\", \"Telefono\": \"123456789\", \"Correo\": \"proveedor@correo.com\", \"Direccion\": \"Calle Falsa 123\"}"

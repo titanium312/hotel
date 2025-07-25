@@ -1,57 +1,66 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getServicios = void 0;
-const Database_1 = require("../../../../db/Database"); // Ajusta la ruta si es necesario
+const Database_1 = require("../../../../db/Database");
 const pool = Database_1.Database.connect();
 const getServicios = async (req, res) => {
     try {
-        // Obtener el parámetro 'tipo_servicio' de la query
-        const { tipo_servicio } = req.query;
-        let tipoServicioArray = [];
-        // Verificamos si tipo_servicio es un arreglo de strings
-        if (Array.isArray(tipo_servicio)) {
-            // Si es un arreglo, nos aseguramos de que cada valor sea una cadena (string)
-            tipoServicioArray = tipo_servicio.filter(item => typeof item === 'string').map(item => item.trim());
-        }
-        // Si tipo_servicio es una sola cadena, la convertimos a un arreglo con un solo valor
-        else if (typeof tipo_servicio === 'string') {
-            tipoServicioArray = [tipo_servicio.trim()];
-        }
-        // Consulta base sin filtro
-        let query = `
-      SELECT 
-          s.ID_Servicio, 
-          s.Nombre, 
-          s.Descripcion, 
-          s.Precio, 
-          st.Descripcion AS Tipo_Servicio
-      FROM 
-          servicio s
-      JOIN 
-          servicio_tipo_relacion str ON s.ID_Servicio = str.ID_Servicio
-      JOIN 
-          Servicio_tipo st ON str.ID_Servicio_tipo = st.ID_producto_tipo
-    `;
-        const queryParams = [];
-        // Si hay tipos de servicio, agregar el filtro con IN
-        if (tipoServicioArray.length > 0) {
-            query += ' WHERE st.Descripcion IN (?)';
-            queryParams.push(tipoServicioArray);
-        }
-        // Ejecutar la consulta con los parámetros
-        const [result] = await pool.query(query, queryParams);
-        const rows = result;
-        // Si no se encuentran resultados
-        if (rows.length === 0) {
-            res.status(404).json({ message: 'No se encontraron servicios.' });
-        }
-        else {
-            res.status(200).json({ servicios: rows });
-        }
+        // Actualización de la consulta SQL para incluir la unidad de cada producto
+        const [servicios] = await pool.query(`
+      SELECT s.ID_Servicio, s.Nombre, s.Descripcion, s.Precio,
+             sp.ID_Producto, sp.Cantidad, 
+             p.Nombre AS Nombre_Producto, p.Precio_Unitario, p.Stock, u.Descripcion AS Unidad_Producto
+      FROM servicio s
+      LEFT JOIN servicio_producto sp ON s.ID_Servicio = sp.ID_Servicio
+      LEFT JOIN producto p ON sp.ID_Producto = p.ID_Producto
+      LEFT JOIN unidad u ON p.ID_Unidad = u.ID_Unidad
+    `);
+        // Organizar los servicios con sus productos
+        const serviciosConProductos = servicios.reduce((acc, s) => {
+            let servicio = acc.find(item => item.ID_Servicio === s.ID_Servicio);
+            if (!servicio) {
+                servicio = {
+                    ID_Servicio: s.ID_Servicio,
+                    Nombre: s.Nombre,
+                    Descripcion: s.Descripcion,
+                    Costo: s.Precio,
+                    Productos: [],
+                    MaxUnidades: 0
+                };
+                acc.push(servicio);
+            }
+            if (s.ID_Producto) {
+                servicio.Productos.push({
+                    ID_Producto: s.ID_Producto,
+                    Nombre_Producto: s.Nombre_Producto,
+                    Cantidad: s.Cantidad,
+                    Precio_Unitario: s.Precio_Unitario,
+                    Stock: s.Stock,
+                    Unidad_Producto: s.Unidad_Producto // Agregar la unidad de medida
+                });
+            }
+            return acc;
+        }, []);
+        // Calcular las unidades máximas por servicio
+        serviciosConProductos.forEach(servicio => {
+            if (servicio.Productos.length === 0) {
+                servicio.MaxUnidades = Infinity;
+            }
+            else {
+                const cantidadesPosibles = servicio.Productos.map((p) => {
+                    const cantidadNecesaria = parseFloat(p.Cantidad.toString());
+                    const disponible = parseFloat(p.Stock.toString());
+                    return Math.floor(disponible / cantidadNecesaria);
+                });
+                servicio.MaxUnidades = Math.min(...cantidadesPosibles);
+            }
+        });
+        // Enviar la respuesta con los servicios y sus productos
+        res.status(200).json(serviciosConProductos);
     }
     catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error al obtener los servicios.' });
+        console.error('Error al obtener los servicios:', error);
+        res.status(500).json({ error: 'Error al obtener los servicios.' });
     }
 };
 exports.getServicios = getServicios;
